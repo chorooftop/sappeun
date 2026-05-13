@@ -107,18 +107,17 @@ export function Cell({
       onClick={onToggle}
       aria-pressed={marked}
       className={cn(
-        'relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-cell px-1 py-1 text-center transition-colors',
+        'relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-cell border-[1.5px] px-1 py-1 text-center transition-colors',
         marked
-          ? 'bg-brand-primary text-paper shadow-cell-glow'
-          : style.bgClass,
-        !marked && style.strokeClass,
+          ? 'border-brand-primary bg-brand-primary text-paper shadow-cell-glow'
+          : 'border-ink-300 bg-paper text-ink-700',
       )}
     >
       {cell.textOnly ? (
         <span
           className={cn(
             'font-bold leading-none',
-            marked ? 'text-paper' : style.labelClass,
+            marked ? 'text-paper' : 'text-ink-700',
           )}
           style={{ fontSize: cell.fontSize ?? 24 }}
         >
@@ -147,7 +146,7 @@ export function Cell({
           <span
             className={cn(
               'line-clamp-2 text-[10px] font-semibold leading-tight',
-              marked ? 'text-paper' : style.labelClass,
+              marked ? 'text-paper' : 'text-ink-700',
             )}
           >
             {cell.label}

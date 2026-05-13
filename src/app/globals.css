@@ -1,44 +1,76 @@
 @import "tailwindcss";
 
+/* Cafe24Ssurround — 자유 라이센스. jsdelivr 미러 사용 중, 프로덕션 전 로컬 woff2로 옮기는 게 안전. */
+@font-face {
+  font-family: 'Cafe24Ssurround';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24Ssurround.woff') format('woff');
+}
+
 @theme {
-  --color-brand-primary: #4FD09A;
-  --color-brand-primary-soft: #E8F5EC;
-  --color-brand-accent: #E5615E;
-  --color-brand-accent-soft: #FFE5E2;
-  --color-brand-secondary: #F5C24B;
-  --color-brand-secondary-soft: #FFF4DC;
+  /* Brand — design tokens v1.1 (light mode) */
+  --color-brand-primary: #3DBC8A;
+  --color-brand-primary-hover: #33A578;
+  --color-brand-primary-soft: #D8F1E6;
+  --color-brand-accent: #FF6B81;
+  --color-brand-accent-soft: #FFE0E5;
+  --color-brand-secondary: #FFC857;
+  --color-brand-secondary-soft: #FFF1CF;
 
   --color-paper: #FFFFFF;
-  --color-canvas: #FAF8F4;
+  --color-canvas: #F4F8F5;
 
   --color-ink-900: #1A2024;
-  --color-ink-700: #4A5358;
-  --color-ink-500: #7B8589;
+  --color-ink-700: #3D464E;
+  --color-ink-500: #7B848C;
   --color-ink-300: #C9CFD4;
-  --color-ink-100: #F0F3F4;
+  --color-ink-100: #EEF1F3;
   --color-ink-50: #F7F9FA;
 
-  --color-cat-nature: #E8F5EC;
-  --color-cat-nature-ink: #4FD09A;
+  --color-stroke-default: #E2E7EB;
+  --color-overlay-scrim: #0F161499;
+
+  --color-success: #3DBC8A;
+  --color-warning: #FFAB00;
+  --color-danger: #E5484D;
+  --color-info: #3B82F6;
+
+  /* Categories — manmade/animal/time pending design verification (see new.pen 02. Atoms) */
+  --color-cat-nature: #D8F1E6;
+  --color-cat-nature-ink: #3DBC8A;
   --color-cat-manmade: #F0EAFA;
   --color-cat-manmade-ink: #8B6FBC;
   --color-cat-animal: #FFEDD9;
   --color-cat-animal-ink: #E89548;
-  --color-cat-time: #FFF4DC;
+  --color-cat-time: #FFF1CF;
   --color-cat-time-ink: #B8842A;
-  --color-cat-mission: #FFE5E2;
-  --color-cat-mission-ink: #E5615E;
-  --color-cat-free: #E5615E;
+  --color-cat-mission: #FFE0E5;
+  --color-cat-mission-ink: #FF6B81;
+  --color-cat-free: #FF6B81;
   --color-cat-free-ink: #FFFFFF;
 
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
   --radius-cell: 10px;
   --radius-card: 16px;
   --radius-illust: 20px;
   --radius-pill: 999px;
 
-  --shadow-cell-glow: 0 2px 8px rgba(79, 208, 154, 0.25);
+  /* shadow-cell-glow re-tinted to new brand-primary #3DBC8A */
+  --shadow-cell-glow: 0 2px 8px rgba(61, 188, 138, 0.25);
   --shadow-card: 0 1px 3px rgba(10, 42, 31, 0.08);
 
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --duration-celebrate: 800ms;
+
+  --font-display: 'Cafe24Ssurround', 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
@@ -58,7 +90,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
 

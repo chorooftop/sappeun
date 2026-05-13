@@ -1,7 +1,8 @@
 'use client'
 
+import { Flag, MoreHorizontal, Shuffle, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CameraModal } from '@/components/camera/CameraModal'
 import type { FacingMode } from '@/components/camera/useCameraStream'
 import { checkBingoLines } from '@/lib/bingo/checkBingoLines'
@@ -22,18 +23,7 @@ interface PhotoEntry {
   url: string
 }
 
-const MODE_LABEL: Record<BoardMode, string> = {
-  standard: '스탠다드',
-  '5x5': '5×5 사진',
-  '3x3': '3×3 사진',
-}
-
-export function BingoBoard({
-  mode,
-  nickname,
-  cells,
-  freePosition,
-}: BoardProps) {
+export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) {
   const router = useRouter()
   const size = cells.length
   const side = Math.sqrt(size)
@@ -57,7 +47,17 @@ export function BingoBoard({
     }
   }, [])
 
-  const lines = checkBingoLines(marked, size)
+  const lines = useMemo(() => checkBingoLines(marked, size), [marked, size])
+
+  const todayLabel = useMemo(() => {
+    const d = new Date()
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}.${mm}.${dd}`
+  }, [])
+
+  const fillPct = (marked.size / size) * 100
 
   function handleCellTap(position: number) {
     if (isPhotoMode) {
@@ -124,19 +124,56 @@ export function BingoBoard({
   const facingMode: FacingMode =
     activeCell?.camera === 'front' ? 'user' : 'environment'
 
+  function handleShuffle() {
+    const ok = window.confirm('칸을 다시 섞을까요? 현재 진행이 사라집니다.')
+    if (ok) window.location.reload()
+  }
+
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-6">
-      <header className="flex flex-col gap-1 rounded-card bg-paper px-4 py-3 shadow-card">
-        <div className="flex items-baseline justify-between">
-          <span className="text-base font-semibold text-ink-900">
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-3">
+      <header className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={handleEnd}
+          aria-label="산책 종료"
+          className="flex h-10 w-10 items-center justify-center rounded-pill text-ink-900 transition-colors hover:bg-ink-100"
+        >
+          <X size={22} aria-hidden />
+        </button>
+        <div className="flex flex-1 flex-col items-center text-center">
+          <span className="text-[15px] font-semibold text-ink-900">
             {nickname}
           </span>
-          <span className="text-xs text-ink-500">{MODE_LABEL[mode]}</span>
+          <span className="text-[11px] text-ink-500">
+            오늘 산책 · {todayLabel}
+          </span>
         </div>
-        <span className="text-xs text-ink-500">
-          {marked.size}/{size} · 빙고 {lines.total}줄
-        </span>
+        <button
+          type="button"
+          aria-label="메뉴"
+          disabled
+          className="flex h-10 w-10 items-center justify-center rounded-pill text-ink-500 disabled:opacity-40"
+        >
+          <MoreHorizontal size={22} aria-hidden />
+        </button>
       </header>
+
+      <section aria-label="진행도" className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-medium text-ink-500">
+            {`채움 ${marked.size}/${size}`}
+          </span>
+          <span className="font-semibold text-brand-primary">
+            {lines.total > 0 ? `빙고 ${lines.total}줄 완성!` : '아직 빙고 없음'}
+          </span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-pill bg-ink-100">
+          <div
+            className="h-full rounded-pill bg-brand-primary transition-all duration-200"
+            style={{ width: `${fillPct}%` }}
+          />
+        </div>
+      </section>
 
       <div
         className={cn(
@@ -159,13 +196,24 @@ export function BingoBoard({
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={handleEnd}
-        className="mt-auto rounded-pill bg-brand-primary px-6 py-4 text-base font-semibold text-paper shadow-cell-glow hover:brightness-95"
-      >
-        산책 종료
-      </button>
+      <footer className="mt-auto flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleShuffle}
+          className="flex h-12 shrink-0 items-center justify-center gap-1.5 rounded-pill border border-ink-100 bg-paper px-4 text-sm font-semibold text-ink-700 transition-colors hover:bg-ink-50"
+        >
+          <Shuffle size={16} aria-hidden />
+          셔플
+        </button>
+        <button
+          type="button"
+          onClick={handleEnd}
+          className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-pill bg-brand-primary px-6 text-sm font-semibold text-paper shadow-cell-glow transition-colors hover:brightness-95"
+        >
+          <Flag size={16} aria-hidden />
+          산책 종료
+        </button>
+      </footer>
 
       {cameraFor !== null && activeCell && (
         <CameraModal

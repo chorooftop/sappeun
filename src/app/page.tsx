@@ -57,7 +57,7 @@ export default function Home() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-5 py-10">
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight text-ink-900">
+        <h1 className="font-display text-4xl font-bold tracking-tight text-ink-900">
           사뿐
         </h1>
         <p className="text-sm text-ink-700">

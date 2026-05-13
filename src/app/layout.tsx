@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import 'pretendard/dist/web/variable/pretendardvariable.css'
 import './globals.css'
 
 const geistSans = Geist({
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport = {
-  themeColor: '#4FD09A',
+  themeColor: '#3DBC8A',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
