@@ -1,7 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { CameraModal } from '@/components/camera/CameraModal'
+import type { FacingMode } from '@/components/camera/useCameraStream'
 import { checkBingoLines } from '@/lib/bingo/checkBingoLines'
 import { cn } from '@/lib/utils/cn'
 import type { BoardMode } from '@/types/bingo'
@@ -13,6 +15,11 @@ interface BoardProps {
   nickname: string
   cells: CellMaster[]
   freePosition: number
+}
+
+interface PhotoEntry {
+  blob: Blob
+  url: string
 }
 
 const MODE_LABEL: Record<BoardMode, string> = {
@@ -30,15 +37,33 @@ export function BingoBoard({
   const router = useRouter()
   const size = cells.length
   const side = Math.sqrt(size)
+  const isPhotoMode = mode !== 'standard'
 
   const [marked, setMarked] = useState<ReadonlySet<number>>(
     () => new Set([freePosition]),
   )
+  const [photos, setPhotos] = useState<ReadonlyMap<number, PhotoEntry>>(
+    () => new Map(),
+  )
+  const [cameraFor, setCameraFor] = useState<number | null>(null)
+
+  const urlsRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    const urls = urlsRef.current
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u))
+      urls.clear()
+    }
+  }, [])
 
   const lines = checkBingoLines(marked, size)
 
   function handleCellTap(position: number) {
-    if (position === freePosition) return
+    if (isPhotoMode) {
+      setCameraFor(position)
+      return
+    }
     setMarked((prev) => {
       const next = new Set(prev)
       if (next.has(position)) next.delete(position)
@@ -47,10 +72,57 @@ export function BingoBoard({
     })
   }
 
+  function handleCapture(blob: Blob) {
+    if (cameraFor === null) return
+    const position = cameraFor
+    const url = URL.createObjectURL(blob)
+    urlsRef.current.add(url)
+
+    setPhotos((prev) => {
+      const next = new Map(prev)
+      const existing = next.get(position)
+      if (existing) {
+        URL.revokeObjectURL(existing.url)
+        urlsRef.current.delete(existing.url)
+      }
+      next.set(position, { blob, url })
+      return next
+    })
+    setMarked((prev) => {
+      if (prev.has(position)) return prev
+      const next = new Set(prev)
+      next.add(position)
+      return next
+    })
+    setCameraFor(null)
+  }
+
+  function handleRemovePhoto(position: number) {
+    setPhotos((prev) => {
+      const existing = prev.get(position)
+      if (!existing) return prev
+      URL.revokeObjectURL(existing.url)
+      urlsRef.current.delete(existing.url)
+      const next = new Map(prev)
+      next.delete(position)
+      return next
+    })
+    setMarked((prev) => {
+      if (!prev.has(position)) return prev
+      const next = new Set(prev)
+      next.delete(position)
+      return next
+    })
+  }
+
   function handleEnd() {
-    const ok = window.confirm('산책을 종료할까요?')
+    const ok = window.confirm('산책을 종료할까요? 촬영한 사진은 사라집니다.')
     if (ok) router.push('/')
   }
+
+  const activeCell = cameraFor !== null ? cells[cameraFor] : null
+  const facingMode: FacingMode =
+    activeCell?.camera === 'front' ? 'user' : 'environment'
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-6">
@@ -78,7 +150,11 @@ export function BingoBoard({
             cell={cell}
             marked={marked.has(i)}
             isFree={i === freePosition}
+            photoUrl={photos.get(i)?.url}
             onToggle={() => handleCellTap(i)}
+            onRemovePhoto={
+              photos.has(i) ? () => handleRemovePhoto(i) : undefined
+            }
           />
         ))}
       </div>
@@ -90,6 +166,15 @@ export function BingoBoard({
       >
         산책 종료
       </button>
+
+      {cameraFor !== null && activeCell && (
+        <CameraModal
+          facingMode={facingMode}
+          label={activeCell.label}
+          onCapture={handleCapture}
+          onClose={() => setCameraFor(null)}
+        />
+      )}
     </main>
   )
 }
