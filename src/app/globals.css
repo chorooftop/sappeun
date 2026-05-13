@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #4FD09A;
+  --color-brand-primary-soft: #E8F5EC;
+  --color-brand-accent: #E5615E;
+  --color-brand-accent-soft: #FFE5E2;
+  --color-brand-secondary: #F5C24B;
+  --color-brand-secondary-soft: #FFF4DC;
+
+  --color-paper: #FFFFFF;
+  --color-canvas: #FAF8F4;
+
+  --color-ink-900: #1A2024;
+  --color-ink-700: #4A5358;
+  --color-ink-500: #7B8589;
+  --color-ink-300: #C9CFD4;
+  --color-ink-100: #F0F3F4;
+  --color-ink-50: #F7F9FA;
+
+  --color-cat-nature: #E8F5EC;
+  --color-cat-nature-ink: #4FD09A;
+  --color-cat-manmade: #F0EAFA;
+  --color-cat-manmade-ink: #8B6FBC;
+  --color-cat-animal: #FFEDD9;
+  --color-cat-animal-ink: #E89548;
+  --color-cat-time: #FFF4DC;
+  --color-cat-time-ink: #B8842A;
+  --color-cat-mission: #FFE5E2;
+  --color-cat-mission-ink: #E5615E;
+  --color-cat-free: #E5615E;
+  --color-cat-free-ink: #FFFFFF;
+
+  --radius-cell: 10px;
+  --radius-card: 16px;
+  --radius-illust: 20px;
+  --radius-pill: 999px;
+
+  --shadow-cell-glow: 0 2px 8px rgba(79, 208, 154, 0.25);
+  --shadow-card: 0 1px 3px rgba(10, 42, 31, 0.08);
+
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+:root {
+  --background: var(--color-canvas);
+  --foreground: var(--color-ink-900);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0F1614;
+    --foreground: #F0F3F4;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer utilities {
+  .bg-photo-backdrop {
+    background-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.2) 0%,
+      rgba(0, 0, 0, 0.8) 100%
+    );
+  }
+}

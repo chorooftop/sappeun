@@ -1,0 +1,89 @@
+{
+  "$schema": "walking-bingo-design v1.3 cell master",
+  "version": "1.2.0",
+  "updatedAt": "2026-05-13",
+  "totalCells": 39,
+  "categories": {
+    "nature": { "label": "자연·식물", "count": 8, "tone": "brand-primary" },
+    "manmade": { "label": "인공물", "count": 10, "tone": "brand-primary" },
+    "animal": { "label": "동물", "count": 6, "tone": "brand-primary" },
+    "time": { "label": "시간·숫자", "count": 6, "tone": "brand-primary" },
+    "mission": { "label": "미션 — 본인 셀프 촬영", "count": 7, "tone": "brand-accent", "variant": "k4Srv", "note": "타인 등장 금지. 본인이 셀프카메라로 미션 수행." },
+    "special": { "label": "특수", "count": 2, "tone": "brand-accent" }
+  },
+  "cells": [
+    { "id": "n01", "category": "nature", "label": "꽃", "icon": "flower-2", "variant": "QeQCU" },
+    { "id": "n02", "category": "nature", "label": "나뭇잎", "icon": "leaf", "variant": "QeQCU" },
+    { "id": "n03", "category": "nature", "label": "민들레", "icon": "sprout", "variant": "QeQCU" },
+    { "id": "n04", "category": "nature", "label": "화분", "icon": "flower", "variant": "QeQCU" },
+    { "id": "n05", "category": "nature", "label": "나무", "icon": "trees", "variant": "QeQCU" },
+    { "id": "n06", "category": "nature", "label": "구름", "icon": "cloud", "variant": "QeQCU" },
+    { "id": "n07", "category": "nature", "label": "햇빛", "icon": "sun", "variant": "QeQCU" },
+    { "id": "n08", "category": "nature", "label": "무지개", "icon": "rainbow", "variant": "QeQCU" },
+
+    { "id": "m01", "category": "manmade", "label": "자판기", "icon": "package", "variant": "QeQCU" },
+    { "id": "m02", "category": "manmade", "label": "표지판", "icon": "signpost", "variant": "QeQCU" },
+    { "id": "m03", "category": "manmade", "label": "공중전화", "icon": "phone", "variant": "QeQCU" },
+    { "id": "m04", "category": "manmade", "label": "우체통", "icon": "mail", "variant": "QeQCU" },
+    { "id": "m05", "category": "manmade", "label": "가로등", "icon": "lamp", "variant": "QeQCU" },
+    { "id": "m06", "category": "manmade", "label": "자전거", "icon": "bike", "variant": "QeQCU" },
+    { "id": "m07", "category": "manmade", "label": "우산", "icon": "umbrella", "variant": "QeQCU" },
+    { "id": "m08", "category": "manmade", "label": "의자", "icon": "armchair", "variant": "QeQCU" },
+    { "id": "m09", "category": "manmade", "label": "벽화", "icon": "brush", "variant": "QeQCU" },
+    { "id": "m10", "category": "manmade", "label": "횡단보도", "icon": "square-asterisk", "variant": "QeQCU" },
+
+    { "id": "a01", "category": "animal", "label": "고양이", "icon": "cat", "variant": "QeQCU" },
+    { "id": "a02", "category": "animal", "label": "강아지", "icon": "dog", "variant": "QeQCU" },
+    { "id": "a03", "category": "animal", "label": "참새", "icon": "bird", "variant": "QeQCU" },
+    { "id": "a04", "category": "animal", "label": "나비", "icon": "bug", "variant": "QeQCU" },
+    { "id": "a05", "category": "animal", "label": "비둘기", "icon": "bird", "variant": "QeQCU" },
+    { "id": "a06", "category": "animal", "label": "물고기", "icon": "fish", "variant": "QeQCU" },
+
+    { "id": "t01", "category": "time", "label": "7", "icon": null, "textOnly": true, "fontSize": 34, "variant": "QeQCU" },
+    { "id": "t02", "category": "time", "label": "5", "icon": null, "textOnly": true, "fontSize": 34, "variant": "QeQCU" },
+    { "id": "t03", "category": "time", "label": "T", "icon": null, "textOnly": true, "fontSize": 30, "variant": "QeQCU" },
+    { "id": "t04", "category": "time", "label": "시계", "icon": "clock", "variant": "QeQCU" },
+    { "id": "t05", "category": "time", "label": "달", "icon": "moon", "variant": "QeQCU" },
+    { "id": "t06", "category": "time", "label": "별", "icon": "star", "variant": "QeQCU" },
+
+    { "id": "ms01", "category": "mission", "label": "활짝 웃은 셀카", "icon": "smile", "variant": "k4Srv", "camera": "front", "difficulty": "easy" },
+    { "id": "ms02", "category": "mission", "label": "손가락 하트", "icon": "heart", "variant": "k4Srv", "camera": "front", "difficulty": "easy" },
+    { "id": "ms03", "category": "mission", "label": "거울 셀카", "icon": "scan-face", "variant": "k4Srv", "camera": "back", "difficulty": "medium" },
+    { "id": "ms04", "category": "mission", "label": "내 그림자", "icon": "cloud-sun", "variant": "k4Srv", "camera": "back", "difficulty": "medium" },
+    { "id": "ms05", "category": "mission", "label": "발 인증샷", "icon": "footprints", "variant": "k4Srv", "camera": "back", "difficulty": "easy" },
+    { "id": "ms06", "category": "mission", "label": "엄지척 셀카", "icon": "thumbs-up", "variant": "k4Srv", "camera": "front", "difficulty": "easy" },
+    { "id": "ms07", "category": "mission", "label": "음료 인증샷", "icon": "coffee", "variant": "k4Srv", "camera": "front", "difficulty": "easy" },
+
+    { "id": "free", "category": "special", "label": "FREE", "icon": null, "variant": "rAdyJ", "fixedPosition": "center" }
+  ],
+  "overrideKeys": {
+    "QeQCU": { "iconNode": "BRawi", "labelNode": "DBUFO", "note": "Cycle 7 변경: BRawi→rQzgX(ref slot, ref→TEUMp), DBUFO→TG0bh. 실제 override는 신규 ID 사용." },
+    "k4Srv": { "iconNode": "WDIT8", "labelNode": "w6VJW", "note": "Cycle 9 변경: 사람(NoPhoto) → 미션(SelfMission). 마스터 icon은 'camera' 기본, 셀별 override로 specific lucide 적용. 마스터 stroke는 dashed → solid brand-accent." }
+  },
+  "stateVariants": {
+    "BXA7m": "PhotoFilled (사진 채워진 셀, 사진 fill로 라벨 위에 표시)",
+    "io2FW": "StdMarked (스탠다드 모드 체크 표시)",
+    "rAdyJ": "FreeIdle (FREE 가운데, 시작 전)",
+    "d5Ptb": "FreeStarted (FREE 가운데, 게임 시작 후)",
+    "Ppbhg": "BingoGlow (빙고 줄 셀)"
+  },
+  "cameraModes": {
+    "front": "전면 카메라 잠금. 셀카 미션 (smile/heart/treeHug).",
+    "back": "후면 카메라 기본. 외부 대상 미션 (shadow/feet/jump/mirror).",
+    "timer": "셀프 타이머 (초). 본인이 카메라 뒤로 들어가는 미션."
+  },
+  "seedRecipes": {
+    "default5x5": {
+      "size": 25,
+      "freePosition": 12,
+      "compose": "FREE 중앙 + 카테고리 비율: nature 6, manmade 7, animal 5, time 3, mission 3 (총 24 + FREE)",
+      "notes": "mission 셀은 3개 이하로 제한 — 너무 많으면 산책보다 셀카 게임이 됨. 난이도 분포: easy 2 + medium/hard 1."
+    },
+    "easy3x3": {
+      "size": 9,
+      "freePosition": 4,
+      "compose": "FREE 중앙 + nature 3, manmade 3, animal 1, mission 1 (총 8 + FREE)",
+      "notes": "쉬운 셀 위주. mission은 easy 난이도만 (selfSmile/selfHeart/selfFeet 중 1)."
+    }
+  }
+}
