@@ -43,6 +43,7 @@ next-env.d.ts
 # AI agent / local-only docs
 CLAUDE.md
 AGENTS.local.md
+HANDOFF.md
 PLAN.md
 PLAN-*.md
 /plans/
@@ -57,4 +58,6 @@ PLAN-*.md
 *.key
 *.pfx
 secrets/
+
+.gstack/
 

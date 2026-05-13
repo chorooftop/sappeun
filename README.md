@@ -16,7 +16,7 @@
 
 ```bash
 pnpm install
-cp docs/ENV.md . # 참고용. .env.local 직접 작성
+cp docs/ENV.md . # 참고용. .env 직접 작성
 pnpm dev # http://localhost:3000
 ```
 
