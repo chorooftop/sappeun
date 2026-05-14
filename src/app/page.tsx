@@ -46,7 +46,7 @@ export default function Home() {
       <header className="flex h-12 shrink-0 items-center justify-between bg-paper px-4">
         <IconButton icon={Menu} variant="ghost" aria-label="메뉴" />
         <p className="font-display text-[22px] font-bold leading-tight text-brand-primary">
-          산책빙고
+          사뿐
         </p>
         <IconButton icon={Download} variant="ghost" aria-label="저장" iconSize={20} />
       </header>
