@@ -36,8 +36,18 @@ This is enough to represent the initial sticker-flat illustration style without 
 | `0fzlN` | 의자 | `Chair` |
 | `OHKjM` | 벽화 | `Mural` |
 | `QTTTc` | 횡단보도 | `Crosswalk` |
+| `5WE4s` | 고양이 | `Cat` |
+| `d3vvN` | 강아지 | `Dog` |
+| `6DLrw` | 참새 | `Sparrow` |
+| `Adka8` | 나비 | `Butterfly` |
+| `mfhbu` | 비둘기 | `Pigeon` |
+| `j3RBu` | 물고기 | `Fish` |
+| `l5HdD` | 시계 | `Clock` |
+| `i7WBM` | 달 | `Moon` |
+| `f9U3R` | 별 | `Star` |
 
-The first two stable sets are now complete: nature 8/8 and manmade 10/10.
+The stable non-mission illustration gate is now complete: nature 8/8, manmade
+10/10, animal 6/6, and time icon 3/3.
 
 ## Files
 
@@ -65,18 +75,28 @@ The first two stable sets are now complete: nature 8/8 and manmade 10/10.
   - `/tmp/sappeun-pencil-manmade-illust/0fzlN.png`
   - `/tmp/sappeun-pencil-manmade-illust/OHKjM.png`
   - `/tmp/sappeun-pencil-manmade-illust/QTTTc.png`
+  - `/tmp/sappeun-pencil-animal-time-illust/5WE4s.png`
+  - `/tmp/sappeun-pencil-animal-time-illust/d3vvN.png`
+  - `/tmp/sappeun-pencil-animal-time-illust/6DLrw.png`
+  - `/tmp/sappeun-pencil-animal-time-illust/Adka8.png`
+  - `/tmp/sappeun-pencil-animal-time-illust/mfhbu.png`
+  - `/tmp/sappeun-pencil-animal-time-illust/j3RBu.png`
+  - `/tmp/sappeun-pencil-animal-time-illust/l5HdD.png`
+  - `/tmp/sappeun-pencil-animal-time-illust/i7WBM.png`
+  - `/tmp/sappeun-pencil-animal-time-illust/f9U3R.png`
 - Local preview capture:
   - `/tmp/sappeun-local-audit/dev-ui-illust-gate.png`
   - `/tmp/sappeun-local-audit/dev-ui-nature-8.png`
   - `/tmp/sappeun-local-audit/dev-ui-manmade-10.png`
+  - `/tmp/sappeun-local-audit/dev-ui-stable-27.png`
 
 ## Implementation Notes
 
 - Components use `viewBox="0 0 120 120"` because the Pencil sample nodes are 120x120 sticker frames.
 - `StickerFrame` centralizes the shared 120x120 rounded frame, fill, and ink stroke.
 - The `Rainbow` component converts Pencil's `sweepAngle: 180` ellipses into SVG half-ellipse paths.
-- The current nature and manmade sets are exposed in `ILLUST_BY_ICON` for later `Cell` wiring, but product board integration is intentionally postponed until more of the 27 stable icons are available.
-- The first gate keeps these illustrations in `/dev/ui` only. Board cell integration should happen after enough icons are ported to avoid a mixed lucide/sticker visual state in the product board.
+- Stable 27 mappings are exposed through both `ILLUST_BY_ICON` and `ILLUST_BY_CELL_ID`. The cell-id map is required because `참새` and `비둘기` both use the source `bird` icon name.
+- Product board rendering still uses lucide icons for now. Switch board cells to `ILLUST_BY_CELL_ID` when the product is ready to move from fallback icons to Pencil sticker artwork in one visual pass.
 
 ## Next Step
 
@@ -84,7 +104,7 @@ Continue porting the stable 27 non-mission illustration targets:
 
 - nature 8 — done
 - manmade 10 — done
-- animal 6
-- time icon 3
+- animal 6 — done
+- time icon 3 — done
 
 Mission/SelfMission cells can remain lucide fallback until their new Pencil artwork exists.

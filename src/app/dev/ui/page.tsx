@@ -42,6 +42,29 @@ const MANMADE_ILLUST_PREVIEW: ReadonlyArray<{
   { label: '횡단보도', name: 'crosswalk', pencilNode: 'QTTTc' },
 ]
 
+const ANIMAL_ILLUST_PREVIEW: ReadonlyArray<{
+  label: string
+  name: IllustKey
+  pencilNode: string
+}> = [
+  { label: '고양이', name: 'cat', pencilNode: '5WE4s' },
+  { label: '강아지', name: 'dog', pencilNode: 'd3vvN' },
+  { label: '참새', name: 'sparrow', pencilNode: '6DLrw' },
+  { label: '나비', name: 'butterfly', pencilNode: 'Adka8' },
+  { label: '비둘기', name: 'pigeon', pencilNode: 'mfhbu' },
+  { label: '물고기', name: 'fish', pencilNode: 'j3RBu' },
+]
+
+const TIME_ILLUST_PREVIEW: ReadonlyArray<{
+  label: string
+  name: IllustKey
+  pencilNode: string
+}> = [
+  { label: '시계', name: 'clock', pencilNode: 'l5HdD' },
+  { label: '달', name: 'moon', pencilNode: 'i7WBM' },
+  { label: '별', name: 'star', pencilNode: 'f9U3R' },
+]
+
 export default function DevUiPage() {
   if (process.env.NODE_ENV === 'production') notFound()
 
@@ -170,10 +193,11 @@ export default function DevUiPage() {
 
         <section className="rounded-lg bg-paper px-8 py-6">
           <h2 className="text-heading-1 font-bold leading-tight">
-            Illustration Gate · Nature 8 / Manmade 10
+            Illustration Gate · Stable 27
           </h2>
           <p className="mt-2 text-body-2 leading-normal text-ink-500">
-            Slice 7 stable sets from `new.pen`: 18 sticker-flat SVGs.
+            Slice 7 stable sets from `new.pen`: Nature 8 / Manmade 10 /
+            Animal 6 / Time 3.
           </p>
           <h3 className="mt-5 text-title font-bold leading-tight text-brand-primary">
             자연·식물
@@ -190,6 +214,30 @@ export default function DevUiPage() {
             {MANMADE_ILLUST_PREVIEW.map((item) => (
               <PreviewIllust key={item.name} {...item} />
             ))}
+          </div>
+          <h3 className="mt-6 text-title font-bold leading-tight text-brand-primary">
+            동물
+          </h3>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            {ANIMAL_ILLUST_PREVIEW.map((item) => (
+              <PreviewIllust key={item.name} {...item} />
+            ))}
+          </div>
+          <h3 className="mt-6 text-title font-bold leading-tight text-brand-accent">
+            시간·하늘
+          </h3>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            {TIME_ILLUST_PREVIEW.map((item) => (
+              <PreviewIllust key={item.name} {...item} />
+            ))}
+          </div>
+          <h3 className="mt-6 text-title font-bold leading-tight text-ink-700">
+            문자·숫자 촬영 힌트
+          </h3>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <PreviewTarget symbol="7" caption="숫자" hint="간판·주소·버스 번호" />
+            <PreviewTarget symbol="5" caption="숫자" hint="간판·주소·가격표" />
+            <PreviewTarget symbol="T" caption="글자" hint="간판·로고·티셔츠" />
           </div>
         </section>
       </div>
@@ -212,6 +260,33 @@ function PreviewIllust({ label, name, pencilNode }: PreviewIllustProps) {
         <span className="text-[10px] font-medium text-ink-500">
           {pencilNode}
         </span>
+      </figcaption>
+    </figure>
+  )
+}
+
+interface PreviewTargetProps {
+  symbol: string
+  caption: string
+  hint: string
+}
+
+function PreviewTarget({ symbol, caption, hint }: PreviewTargetProps) {
+  return (
+    <figure className="flex min-h-28 items-center gap-3 rounded-md border border-ink-100 bg-canvas p-4">
+      <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-cell border border-ink-300 bg-paper">
+        <span className="text-[34px] font-bold leading-none text-ink-700">
+          {symbol}
+        </span>
+        <span className="mt-0.5 text-[10px] font-semibold leading-tight text-ink-500">
+          {caption}
+        </span>
+      </div>
+      <figcaption className="flex flex-col gap-1 leading-normal">
+        <span className="text-caption font-semibold text-ink-700">
+          {symbol} 찾기
+        </span>
+        <span className="text-[11px] font-medium text-ink-500">{hint}</span>
       </figcaption>
     </figure>
   )

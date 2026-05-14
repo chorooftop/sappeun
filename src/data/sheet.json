@@ -39,9 +39,9 @@
     { "id": "a05", "category": "animal", "label": "비둘기", "icon": "bird", "variant": "QeQCU" },
     { "id": "a06", "category": "animal", "label": "물고기", "icon": "fish", "variant": "QeQCU" },
 
-    { "id": "t01", "category": "time", "label": "7", "icon": null, "textOnly": true, "fontSize": 34, "variant": "QeQCU" },
-    { "id": "t02", "category": "time", "label": "5", "icon": null, "textOnly": true, "fontSize": 34, "variant": "QeQCU" },
-    { "id": "t03", "category": "time", "label": "T", "icon": null, "textOnly": true, "fontSize": 30, "variant": "QeQCU" },
+    { "id": "t01", "category": "time", "label": "7", "caption": "숫자", "captureLabel": "숫자 7", "hint": "간판·주소·버스 번호처럼 보이는 숫자 7을 찾아요", "icon": null, "textOnly": true, "fontSize": 34, "variant": "QeQCU" },
+    { "id": "t02", "category": "time", "label": "5", "caption": "숫자", "captureLabel": "숫자 5", "hint": "간판·주소·가격표처럼 보이는 숫자 5를 찾아요", "icon": null, "textOnly": true, "fontSize": 34, "variant": "QeQCU" },
+    { "id": "t03", "category": "time", "label": "T", "caption": "글자", "captureLabel": "T 글자", "hint": "간판·로고·티셔츠처럼 보이는 T 글자를 찾아요", "icon": null, "textOnly": true, "fontSize": 30, "variant": "QeQCU" },
     { "id": "t04", "category": "time", "label": "시계", "icon": "clock", "variant": "QeQCU" },
     { "id": "t05", "category": "time", "label": "달", "icon": "moon", "variant": "QeQCU" },
     { "id": "t06", "category": "time", "label": "별", "icon": "star", "variant": "QeQCU" },

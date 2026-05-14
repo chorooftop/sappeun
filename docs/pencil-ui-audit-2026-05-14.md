@@ -14,6 +14,9 @@
   - `/tmp/sappeun-local-audit/home-500.png`
   - `/tmp/sappeun-local-audit/board-standard-initial-500-after.png`
   - `/tmp/sappeun-local-audit/board-standard-polish-500.png`
+  - `/tmp/sappeun-local-audit/bingo-time-labels.png`
+  - `/tmp/sappeun-local-audit/bingo-photo-time-camera-hint.png`
+  - `/tmp/sappeun-local-audit/dev-ui-stable-27.png`
 
 ## Changes Applied
 
@@ -26,6 +29,7 @@
 | Board frame width | S2 is a fixed 390px mobile app frame. | Changed the board shell from `max-w-md` to `max-w-[390px]`. |
 | Board bands | S2 Header, Progress, and BottomBar are white full-width bands. | Split Board into white header/progress/footer bands with the grid on canvas. |
 | Bottom CTA | S2 primary end CTA uses stronger 16px label weight inside a white bottom bar. | Updated end CTA text to `text-base` and moved footer spacing to the band. |
+| Text-only targets | `숫자 7`, `숫자 5`, and `T자 표지` are ambiguous if the board only shows `7`, `5`, `T`. | Added `caption`, `captureLabel`, and `hint` metadata so board cells show `숫자`/`글자`, and camera mode explains where to find the target. |
 
 ## Visual Decisions
 
@@ -37,6 +41,7 @@
 ## Follow-Up For Frontend Work
 
 - Keep the Pencil cell source of truth as: 66px mobile cell target, 6px radius, 6px grid gap, dark idle icon/label, green marked fill, pink free fill.
+- Preserve text-only target guidance in future board redesigns: visible board caption (`숫자`/`글자`), accessible capture label (`숫자 7`, `숫자 5`, `T 글자`), and camera hint examples (`간판`, `주소`, `버스 번호`, `가격표`, `로고`, `티셔츠`).
 - When implementing future board states, avoid reintroducing category-colored idle icons unless Pencil adds that variant.
 - Re-run visual capture after the next frontend slice with gstack browse once its one-time setup is complete; current captures used Pencil export, Chrome headless, and direct Chrome interaction.
 - NoPhoto remains blocked until the `sheet.json` self-mission entries are reconciled with the Pencil NoPhoto board source of truth.

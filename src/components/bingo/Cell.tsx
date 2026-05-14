@@ -30,6 +30,8 @@ export function Cell({
   onToggle,
   onRemovePhoto,
 }: CellProps) {
+  const accessibleLabel = cell.captureLabel ?? cell.label
+
   if (photoUrl) {
     function handleRemoveClick(e: MouseEvent<HTMLButtonElement>) {
       e.stopPropagation()
@@ -41,7 +43,7 @@ export function Cell({
           type="button"
           onClick={onToggle}
           aria-pressed={marked}
-          aria-label={`${cell.label} (촬영됨, 다시 찍기)`}
+          aria-label={`${accessibleLabel} (촬영됨, 다시 찍기)`}
           className={cn(
             'absolute inset-0 overflow-hidden rounded-cell border-2 transition-all',
             marked
@@ -57,7 +59,7 @@ export function Cell({
           />
           <span className="pointer-events-none absolute inset-0 flex items-end justify-center bg-gradient-to-t from-ink-900/70 via-transparent to-transparent px-1 pb-1">
             <span className="line-clamp-1 text-[10px] font-medium text-paper">
-              {cell.label}
+              {accessibleLabel}
             </span>
           </span>
           {marked && (
@@ -70,7 +72,7 @@ export function Cell({
           <button
             type="button"
             onClick={handleRemoveClick}
-            aria-label={`${cell.label} 사진 삭제`}
+            aria-label={`${accessibleLabel} 사진 삭제`}
             className="absolute left-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-pill bg-ink-900/70 text-paper hover:bg-ink-900"
           >
             <X size={12} strokeWidth={3} aria-hidden />
@@ -112,7 +114,9 @@ export function Cell({
       type="button"
       onClick={onToggle}
       aria-pressed={marked}
-      aria-label={noPhoto ? `${cell.label} (사진 없이 마킹)` : cell.label}
+      aria-label={
+        noPhoto ? `${accessibleLabel} (사진 없이 마킹)` : accessibleLabel
+      }
       className={cn(
         'relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-cell border-[1.5px] px-1 py-1 text-center transition-all',
         marked
@@ -124,14 +128,26 @@ export function Cell({
       )}
     >
       {cell.textOnly ? (
-        <span
-          className={cn(
-            'font-bold leading-none',
-            marked ? 'text-paper' : 'text-ink-700',
+        <span className="flex flex-col items-center gap-0.5">
+          <span
+            className={cn(
+              'font-bold leading-none',
+              marked ? 'text-paper' : 'text-ink-700',
+            )}
+            style={{ fontSize: cell.fontSize ?? 24 }}
+          >
+            {cell.label}
+          </span>
+          {cell.caption && (
+            <span
+              className={cn(
+                'text-[10px] font-semibold leading-tight',
+                marked ? 'text-paper/90' : 'text-ink-500',
+              )}
+            >
+              {cell.caption}
+            </span>
           )}
-          style={{ fontSize: cell.fontSize ?? 24 }}
-        >
-          {cell.label}
         </span>
       ) : (
         <>

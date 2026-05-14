@@ -15,6 +15,7 @@ import {
 interface CameraModalProps {
   facingMode: FacingMode
   label: string
+  hint?: string
   onCapture: (blob: Blob) => void
   onClose: () => void
 }
@@ -39,6 +40,7 @@ function withObjectParticle(value: string) {
 export function CameraModal({
   facingMode,
   label,
+  hint,
   onCapture,
   onClose,
 }: CameraModalProps) {
@@ -213,7 +215,7 @@ export function CameraModal({
         {!previewUrl && !error && (
           <>
             <p className="px-8 pb-4 pt-5 text-center text-[13px] leading-normal text-ink-300">
-              사물을 화면 중앙에 두고 셔터를 눌러주세요
+              {hint ?? '사물을 화면 중앙에 두고 셔터를 눌러주세요'}
             </p>
             <div className="flex items-center justify-between px-10 pb-6 pt-1">
               <button

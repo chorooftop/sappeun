@@ -16,6 +16,9 @@ export interface CellMaster {
   id: string
   category: Category
   label: string
+  caption?: string
+  captureLabel?: string
+  hint?: string
   icon: string | null
   variant: CellVariant
   textOnly?: boolean

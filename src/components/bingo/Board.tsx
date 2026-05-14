@@ -261,7 +261,8 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
       {cameraFor !== null && activeCell && (
         <CameraModal
           facingMode={facingMode}
-          label={activeCell.label}
+          label={activeCell.captureLabel ?? activeCell.label}
+          hint={activeCell.hint}
           onCapture={handleCapture}
           onClose={() => setCameraFor(null)}
         />
