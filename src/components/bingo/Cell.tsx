@@ -13,6 +13,7 @@ interface CellProps {
   cell: CellMaster
   marked: boolean
   inBingoLine?: boolean
+  dense?: boolean
   noPhoto?: boolean
   isFree: boolean
   photoUrl?: string
@@ -24,6 +25,7 @@ export function Cell({
   cell,
   marked,
   inBingoLine = false,
+  dense = false,
   noPhoto = false,
   isFree,
   photoUrl,
@@ -31,6 +33,12 @@ export function Cell({
   onRemovePhoto,
 }: CellProps) {
   const accessibleLabel = cell.captureLabel ?? cell.label
+  const iconSize = dense ? 28 : 30
+  const labelClassName = cn(
+    'line-clamp-2 max-w-full break-keep px-0.5 font-semibold leading-[1.12]',
+    dense ? 'text-[9.5px]' : 'text-[10px]',
+    marked ? 'text-paper' : 'text-ink-700',
+  )
 
   if (photoUrl) {
     function handleRemoveClick(e: MouseEvent<HTMLButtonElement>) {
@@ -38,7 +46,7 @@ export function Cell({
       onRemovePhoto?.()
     }
     return (
-      <div className="relative aspect-square">
+      <div className="relative aspect-square min-w-0">
         <button
           type="button"
           onClick={onToggle}
@@ -90,7 +98,7 @@ export function Cell({
         aria-pressed={marked}
         aria-label={marked ? '중앙 자유 칸 (완료)' : '중앙 자유 칸 (여기서 시작)'}
         className={cn(
-          'relative flex aspect-square flex-col items-center justify-center rounded-cell px-1 py-1 text-center transition-all',
+          'relative flex aspect-square min-w-0 flex-col items-center justify-center rounded-cell px-1 py-1 text-center transition-all',
           marked
             ? 'bg-brand-accent text-paper shadow-cell-glow'
             : 'border-2 border-brand-accent bg-brand-accent-soft text-brand-accent',
@@ -118,7 +126,7 @@ export function Cell({
         noPhoto ? `${accessibleLabel} (사진 없이 마킹)` : accessibleLabel
       }
       className={cn(
-        'relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-cell border-[1.5px] px-1 py-1 text-center transition-all',
+        'relative flex aspect-square min-w-0 flex-col items-center justify-center gap-0.5 rounded-cell border-[1.5px] px-1 py-1 text-center transition-all',
         marked
           ? 'border-brand-primary bg-brand-primary text-paper shadow-cell-glow'
           : noPhoto
@@ -141,7 +149,8 @@ export function Cell({
           {cell.caption && (
             <span
               className={cn(
-                'text-[10px] font-semibold leading-tight',
+                'font-semibold leading-tight',
+                dense ? 'text-[9.5px]' : 'text-[10px]',
                 marked ? 'text-paper/90' : 'text-ink-500',
               )}
             >
@@ -160,7 +169,7 @@ export function Cell({
             />
           ) : noPhoto ? (
             <Lock
-              size={24}
+              size={dense ? 23 : 24}
               strokeWidth={2}
               className="text-ink-500"
               aria-hidden
@@ -169,19 +178,14 @@ export function Cell({
             cell.icon && (
               <DynamicIcon
                 name={cell.icon}
-                size={30}
+                size={iconSize}
                 strokeWidth={1.8}
                 className="text-ink-700"
                 aria-hidden
               />
             )
           )}
-          <span
-            className={cn(
-              'line-clamp-2 text-[10px] font-semibold leading-tight',
-              marked ? 'text-paper' : 'text-ink-700',
-            )}
-          >
+          <span className={labelClassName}>
             {cell.label}
           </span>
         </>

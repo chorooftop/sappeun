@@ -57,6 +57,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
   const size = cells.length
   const side = Math.sqrt(size)
   const isPhotoMode = mode !== 'standard'
+  const isDenseBoard = side === 5
 
   const [marked, setMarked] = useState<ReadonlySet<number>>(
     () => new Set([freePosition]),
@@ -228,6 +229,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
             cell={cell}
             marked={marked.has(i)}
             inBingoLine={bingoLinePositions.has(i)}
+            dense={isDenseBoard}
             noPhoto={isNoPhotoCell(cell)}
             isFree={i === freePosition}
             photoUrl={photos.get(i)?.url}
