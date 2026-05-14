@@ -168,13 +168,13 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-3">
-      <header className="flex items-center justify-between gap-2">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-1 flex-col bg-canvas text-ink-900">
+      <header className="flex items-center justify-between gap-3 bg-paper px-4 py-3">
         <button
           type="button"
           onClick={handleEnd}
           aria-label="산책 종료"
-          className="flex h-10 w-10 items-center justify-center rounded-pill text-ink-900 transition-colors hover:bg-ink-100"
+          className="flex h-11 w-11 items-center justify-center rounded-pill text-ink-900 transition-colors hover:bg-ink-100"
         >
           <X size={22} aria-hidden />
         </button>
@@ -190,13 +190,16 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
           type="button"
           aria-label="메뉴"
           disabled
-          className="flex h-10 w-10 items-center justify-center rounded-pill text-ink-500 disabled:opacity-40"
+          className="flex h-11 w-11 items-center justify-center rounded-pill text-ink-500 disabled:opacity-40"
         >
           <MoreHorizontal size={22} aria-hidden />
         </button>
       </header>
 
-      <section aria-label="진행도" className="flex flex-col gap-1.5">
+      <section
+        aria-label="진행도"
+        className="flex flex-col gap-1.5 bg-paper px-4 pb-2 pt-1"
+      >
         <div className="flex items-center justify-between text-[11px]">
           <span className="font-medium text-ink-500">
             {`채움 ${marked.size}/${size}`}
@@ -215,7 +218,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
 
       <div
         className={cn(
-          'grid w-full gap-1.5',
+          'grid w-full gap-1.5 px-4 py-4',
           side === 5 ? 'grid-cols-5' : 'grid-cols-3',
         )}
       >
@@ -236,7 +239,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
         ))}
       </div>
 
-      <footer className="mt-auto flex items-center gap-2">
+      <footer className="mt-auto flex items-center gap-3 border-t border-ink-100 bg-paper px-4 pb-7 pt-3">
         <button
           type="button"
           onClick={handleShuffle}
@@ -248,7 +251,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
         <button
           type="button"
           onClick={handleEnd}
-          className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-pill bg-brand-primary px-6 text-sm font-semibold text-paper shadow-cell-glow transition-colors hover:brightness-95"
+          className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-pill bg-brand-primary px-6 text-base font-semibold text-paper shadow-cell-glow transition-colors hover:brightness-95"
         >
           <Flag size={16} aria-hidden />
           산책 종료
