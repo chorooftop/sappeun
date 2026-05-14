@@ -1,9 +1,10 @@
 'use client'
 
-import { Flag, MoreHorizontal, Shuffle, X } from 'lucide-react'
+import { Flag, Shuffle, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CameraModal } from '@/components/camera/CameraModal'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import type { FacingMode } from '@/components/camera/useCameraStream'
 import { checkBingoLines } from '@/lib/bingo/checkBingoLines'
 import { cn } from '@/lib/utils/cn'
@@ -213,14 +214,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
             오늘 산책 · {todayLabel}
           </span>
         </div>
-        <button
-          type="button"
-          aria-label="메뉴"
-          disabled
-          className="flex h-11 w-11 items-center justify-center rounded-pill text-ink-500 disabled:opacity-40"
-        >
-          <MoreHorizontal size={22} aria-hidden />
-        </button>
+        <ThemeToggle compact />
       </header>
 
       <section

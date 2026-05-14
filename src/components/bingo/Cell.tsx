@@ -7,8 +7,7 @@ import { DynamicIcon } from '@/lib/icons/dynamic-icon'
 import { cn } from '@/lib/utils/cn'
 import type { CellMaster } from '@/types/cell'
 
-const BINGO_GLOW_CLASS =
-  'shadow-[0_0_14px_1px_#FFC857]'
+const BINGO_GLOW_CLASS = 'shadow-bingo-glow'
 
 interface CellProps {
   cell: CellMaster
@@ -220,7 +219,7 @@ function SwatchBadge({ swatch, dense }: SwatchBadgeProps) {
     <span
       aria-hidden
       className={cn(
-        'shrink-0 rounded-pill border-2 shadow-[0_1px_2px_rgba(26,32,36,0.12)]',
+        'shrink-0 rounded-pill border-2 shadow-swatch',
         dense ? 'h-6 w-6' : 'h-7 w-7',
         visual.className,
       )}

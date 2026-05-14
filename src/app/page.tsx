@@ -4,7 +4,6 @@ import {
   Ban,
   Camera,
   ChevronRight,
-  Download,
   Hand,
   Menu,
   Printer,
@@ -14,6 +13,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { HomeHero } from '@/components/home/HomeHero'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { Badge, Button, IconButton, TextField } from '@/components/ui'
 import { cn } from '@/lib/utils/cn'
 import type { BoardMode } from '@/types/bingo'
@@ -48,7 +48,7 @@ export default function Home() {
         <p className="font-display text-[22px] font-bold leading-tight text-brand-primary">
           사뿐
         </p>
-        <IconButton icon={Download} variant="ghost" aria-label="저장" iconSize={20} />
+        <ThemeToggle compact />
       </header>
 
       <div className="flex flex-1 flex-col gap-5 px-4 pb-4 pt-5">

@@ -247,7 +247,7 @@ function ColorCell({ swatch, label }: ColorCellProps) {
     >
       <span
         aria-hidden
-        className={`h-7 w-7 rounded-pill border-2 shadow-[0_1px_2px_rgba(26,32,36,0.12)] ${swatchVisual.className}`}
+        className={`h-7 w-7 rounded-pill border-2 shadow-swatch ${swatchVisual.className}`}
         style={swatchVisual.style}
       />
       <span className={`line-clamp-2 text-[10px] font-semibold leading-[1.12] ${visual.labelClassName}`}>

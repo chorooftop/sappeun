@@ -167,24 +167,24 @@ export function CameraModal({
       role="dialog"
       aria-modal="true"
       aria-label={`${label} 촬영`}
-      className="fixed inset-0 z-50 bg-[#0A0A0A]"
+      className="fixed inset-0 z-50 bg-camera-shell"
     >
-      <div className="mx-auto flex h-full w-full max-w-[390px] flex-col overflow-hidden bg-[#0A0A0A] text-paper">
+      <div className="mx-auto flex h-full w-full max-w-[390px] flex-col overflow-hidden bg-camera-shell text-camera-foreground">
         <header className="flex items-center justify-between gap-3 px-4 py-3">
           <IconButton
             ref={closeBtnRef}
             icon={X}
             variant="ghost"
             aria-label="닫기"
-            className="text-paper hover:bg-paper/10"
+            className="text-camera-foreground hover:bg-camera-foreground/10"
             onClick={onClose}
           />
           <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-center">
             <CameraTargetVisual cell={cell} iconClassName={visual.iconClassName} />
-            <span className="text-[length:var(--text-micro)] font-medium leading-normal text-ink-300">
+            <span className="text-[length:var(--text-micro)] font-medium leading-normal text-camera-muted">
               찾기
             </span>
-            <span className="line-clamp-1 text-[length:var(--text-body-1)] font-semibold leading-normal text-paper">
+            <span className="line-clamp-1 text-[length:var(--text-body-1)] font-semibold leading-normal text-camera-foreground">
               {label}
             </span>
           </div>
@@ -197,24 +197,24 @@ export function CameraModal({
                 : '후면 카메라로 전환'
             }
             iconSize={22}
-            className="text-paper hover:bg-paper/10"
+            className="text-camera-foreground hover:bg-camera-foreground/10"
             onClick={handleSwitchCamera}
           />
         </header>
 
-        <section className="relative aspect-square w-full bg-[#0F0F0F]">
+        <section className="relative aspect-square w-full bg-camera-surface">
           {error ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
               <Package
                 size={72}
                 strokeWidth={1.8}
-                className="text-[#2A2F35]"
+                className="text-camera-icon-muted"
                 aria-hidden
               />
-              <p className="text-[length:var(--text-body-1)] font-semibold">
+              <p className="text-[length:var(--text-body-1)] font-semibold text-camera-foreground">
                 카메라를 열 수 없어요
               </p>
-              <p className="text-[length:var(--text-body-2)] leading-normal text-ink-500">
+              <p className="text-[length:var(--text-body-2)] leading-normal text-camera-muted">
                 {ERROR_MESSAGE[error]}
               </p>
             </div>
@@ -235,10 +235,10 @@ export function CameraModal({
               <Package
                 size={96}
                 strokeWidth={1.6}
-                className="text-[#2A2F35]"
+                className="text-camera-icon-muted"
                 aria-hidden
               />
-              <p className="text-[length:var(--text-body-2)] leading-normal text-[#5A626A]">
+              <p className="text-[length:var(--text-body-2)] leading-normal text-camera-muted">
                 {withObjectParticle(label)} 화면에 맞춰주세요
               </p>
             </div>
@@ -255,7 +255,7 @@ export function CameraModal({
 
         {!previewUrl && !error && (
           <>
-            <p className="px-8 pb-4 pt-5 text-center text-[13px] leading-normal text-ink-300">
+            <p className="px-8 pb-4 pt-5 text-center text-[13px] leading-normal text-camera-muted">
               {hint ?? '사물을 화면 중앙에 두고 셔터를 눌러주세요'}
             </p>
             <div className="flex items-center justify-between px-10 pb-6 pt-1">
@@ -263,7 +263,7 @@ export function CameraModal({
                 type="button"
                 disabled
                 aria-label="갤러리에서 선택"
-                className="flex h-12 w-12 items-center justify-center rounded-md bg-[#252A30] text-paper disabled:opacity-70"
+                className="flex h-12 w-12 items-center justify-center rounded-md bg-camera-control text-camera-foreground disabled:opacity-70"
               >
                 <ImageIcon size={24} aria-hidden />
               </button>
@@ -273,23 +273,23 @@ export function CameraModal({
                 disabled={!canCapture}
                 aria-label="촬영"
                 className={cn(
-                  'flex h-20 w-20 items-center justify-center rounded-pill border-4 border-paper transition-opacity',
+                  'flex h-20 w-20 items-center justify-center rounded-pill border-4 border-camera-foreground transition-opacity',
                   !canCapture && 'opacity-50',
                 )}
               >
-                <span className="h-[60px] w-[60px] rounded-pill bg-paper" />
+                <span className="h-[60px] w-[60px] rounded-pill bg-camera-foreground" />
               </button>
               <button
                 type="button"
                 disabled
                 aria-label="플래시"
-                className="flex h-12 w-12 items-center justify-center text-paper disabled:opacity-70"
+                className="flex h-12 w-12 items-center justify-center text-camera-foreground disabled:opacity-70"
               >
                 <ZapOff size={24} aria-hidden />
               </button>
             </div>
             <div className="flex h-6 items-center justify-center">
-              <span className="h-[5px] w-[134px] rounded-[3px] bg-paper" />
+              <span className="h-[5px] w-[134px] rounded-[3px] bg-camera-foreground" />
             </div>
           </>
         )}
@@ -299,14 +299,14 @@ export function CameraModal({
             <button
               type="button"
               onClick={handleRetry}
-              className="min-h-12 rounded-pill border border-paper/20 px-6 font-semibold text-paper"
+              className="min-h-12 rounded-pill border border-camera-foreground/20 px-6 font-semibold text-camera-foreground"
             >
               다시 시도
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="min-h-12 rounded-pill bg-paper px-6 font-semibold text-ink-900"
+              className="min-h-12 rounded-pill bg-camera-foreground px-6 font-semibold text-camera-button-text"
             >
               닫기
             </button>
@@ -329,7 +329,7 @@ function CameraTargetVisual({ cell, iconClassName }: CameraTargetVisualProps) {
       <span
         aria-hidden
         className={cn(
-          'mb-0.5 h-7 w-7 rounded-pill border-2 shadow-[0_1px_3px_rgba(0,0,0,0.28)]',
+          'mb-0.5 h-7 w-7 rounded-pill border-2 shadow-swatch',
           swatch.className,
         )}
         style={swatch.style}
@@ -339,7 +339,7 @@ function CameraTargetVisual({ cell, iconClassName }: CameraTargetVisualProps) {
 
   if (cell.textOnly) {
     return (
-      <span className="mb-0.5 flex h-7 min-w-7 items-center justify-center rounded-pill bg-paper/10 px-2 text-[15px] font-bold leading-none text-paper">
+      <span className="mb-0.5 flex h-7 min-w-7 items-center justify-center rounded-pill bg-camera-foreground/10 px-2 text-[15px] font-bold leading-none text-camera-foreground">
         {cell.label}
       </span>
     )
