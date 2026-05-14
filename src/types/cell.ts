@@ -22,6 +22,7 @@ export interface CellMaster {
   fontSize?: number
   camera?: CameraMode
   difficulty?: Difficulty
+  noPhoto?: boolean
   fixedPosition?: 'center'
 }
 

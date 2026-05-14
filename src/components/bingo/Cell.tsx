@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, X } from 'lucide-react'
+import { Check, Lock, X } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { DynamicIcon } from '@/lib/icons/dynamic-icon'
 import { cn } from '@/lib/utils/cn'
@@ -13,6 +13,7 @@ interface CellProps {
   cell: CellMaster
   marked: boolean
   inBingoLine?: boolean
+  noPhoto?: boolean
   isFree: boolean
   photoUrl?: string
   onToggle: () => void
@@ -23,6 +24,7 @@ export function Cell({
   cell,
   marked,
   inBingoLine = false,
+  noPhoto = false,
   isFree,
   photoUrl,
   onToggle,
@@ -110,11 +112,14 @@ export function Cell({
       type="button"
       onClick={onToggle}
       aria-pressed={marked}
+      aria-label={noPhoto ? `${cell.label} (사진 없이 마킹)` : cell.label}
       className={cn(
         'relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-cell border-[1.5px] px-1 py-1 text-center transition-all',
         marked
           ? 'border-brand-primary bg-brand-primary text-paper shadow-cell-glow'
-          : 'border-ink-300 bg-paper text-ink-700',
+          : noPhoto
+            ? 'border-ink-300 bg-ink-50 text-ink-500'
+            : 'border-ink-300 bg-paper text-ink-700',
         inBingoLine && BINGO_GLOW_CLASS,
       )}
     >
@@ -135,6 +140,13 @@ export function Cell({
               size={32}
               strokeWidth={3}
               className="text-paper"
+              aria-hidden
+            />
+          ) : noPhoto ? (
+            <Lock
+              size={24}
+              strokeWidth={2}
+              className="text-ink-500"
               aria-hidden
             />
           ) : (

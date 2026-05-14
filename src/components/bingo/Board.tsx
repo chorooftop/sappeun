@@ -48,6 +48,10 @@ function collectBingoLinePositions(
   return positions
 }
 
+function isNoPhotoCell(cell: CellMaster): boolean {
+  return cell.noPhoto === true
+}
+
 export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) {
   const router = useRouter()
   const size = cells.length
@@ -88,17 +92,22 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
 
   const fillPct = (marked.size / size) * 100
 
-  function handleCellTap(position: number) {
-    if (isPhotoMode) {
-      setCameraFor(position)
-      return
-    }
+  function toggleMarked(position: number) {
     setMarked((prev) => {
       const next = new Set(prev)
       if (next.has(position)) next.delete(position)
       else next.add(position)
       return next
     })
+  }
+
+  function handleCellTap(position: number) {
+    const cell = cells[position]
+    if (isPhotoMode && !isNoPhotoCell(cell)) {
+      setCameraFor(position)
+      return
+    }
+    toggleMarked(position)
   }
 
   function handleCapture(blob: Blob) {
@@ -216,6 +225,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
             cell={cell}
             marked={marked.has(i)}
             inBingoLine={bingoLinePositions.has(i)}
+            noPhoto={isNoPhotoCell(cell)}
             isFree={i === freePosition}
             photoUrl={photos.get(i)?.url}
             onToggle={() => handleCellTap(i)}
