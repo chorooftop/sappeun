@@ -1,8 +1,10 @@
 'use client'
 
-import { Camera, X } from 'lucide-react'
+import { ImageIcon, Package, RefreshCw, X, ZapOff } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { IconButton } from '@/components/ui'
 import { cropSquareFromVideo } from '@/lib/camera/cropSquare'
+import { cn } from '@/lib/utils/cn'
 import { CapturePreview } from './CapturePreview'
 import {
   useCameraStream,
@@ -27,6 +29,13 @@ const ERROR_MESSAGE: Record<CameraError, string> = {
   unknown: '예기치 못한 오류가 발생했어요.',
 }
 
+function withObjectParticle(value: string) {
+  const trimmed = value.trim()
+  const lastChar = trimmed.charCodeAt(trimmed.length - 1)
+  if (lastChar < 0xac00 || lastChar > 0xd7a3) return `${trimmed}를`
+  return (lastChar - 0xac00) % 28 === 0 ? `${trimmed}를` : `${trimmed}을`
+}
+
 export function CameraModal({
   facingMode,
   label,
@@ -35,13 +44,17 @@ export function CameraModal({
 }: CameraModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
-  const { stream, error } = useCameraStream(facingMode)
+  const [currentFacingMode, setCurrentFacingMode] =
+    useState<FacingMode>(facingMode)
+  const { stream, error } = useCameraStream(currentFacingMode)
+  const [videoReady, setVideoReady] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null)
 
   useEffect(() => {
     const video = videoRef.current
     if (!video || !stream) return
+    setVideoReady(false)
     video.srcObject = stream
     return () => {
       video.srcObject = null
@@ -96,79 +109,160 @@ export function CameraModal({
     setPreviewUrl(null)
   }
 
+  function handleSwitchCamera() {
+    setCurrentFacingMode((prev) =>
+      prev === 'environment' ? 'user' : 'environment',
+    )
+    setPreviewBlob(null)
+    setPreviewUrl(null)
+    setVideoReady(false)
+  }
+
+  const showHint = !previewUrl && (!stream || !videoReady)
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={`${label} 촬영`}
-      className="fixed inset-0 z-50 flex flex-col bg-ink-900"
+      className="fixed inset-0 z-50 bg-[#0A0A0A]"
     >
-      <div className="flex items-center justify-between px-4 py-3 text-paper">
-        <button
-          ref={closeBtnRef}
-          type="button"
-          onClick={onClose}
-          aria-label="닫기"
-          className="rounded-pill p-2 hover:bg-paper/10"
-        >
-          <X size={24} aria-hidden />
-        </button>
-        <span className="text-base font-semibold">{label}</span>
-        <span aria-hidden className="w-10" />
-      </div>
-
-      <div className="relative flex flex-1 items-center justify-center">
-        {error ? (
-          <div className="flex flex-col items-center gap-3 px-6 text-center text-paper">
-            <p className="text-base font-semibold">카메라를 열 수 없어요</p>
-            <p className="text-sm text-ink-300">{ERROR_MESSAGE[error]}</p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-2 rounded-pill bg-paper px-6 py-3 text-ink-900"
-            >
-              닫기
-            </button>
+      <div className="mx-auto flex h-full w-full max-w-[390px] flex-col overflow-hidden bg-[#0A0A0A] text-paper">
+        <header className="flex items-center justify-between gap-3 px-4 py-3">
+          <IconButton
+            ref={closeBtnRef}
+            icon={X}
+            variant="ghost"
+            aria-label="닫기"
+            className="text-paper hover:bg-paper/10"
+            onClick={onClose}
+          />
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-center">
+            <span className="text-[length:var(--text-micro)] font-medium leading-normal text-ink-300">
+              찾기
+            </span>
+            <span className="line-clamp-1 text-[length:var(--text-body-1)] font-semibold leading-normal text-paper">
+              {label}
+            </span>
           </div>
-        ) : (
-          <>
+          <IconButton
+            icon={RefreshCw}
+            variant="ghost"
+            aria-label={
+              currentFacingMode === 'environment'
+                ? '전면 카메라로 전환'
+                : '후면 카메라로 전환'
+            }
+            iconSize={22}
+            className="text-paper hover:bg-paper/10"
+            onClick={handleSwitchCamera}
+          />
+        </header>
+
+        <section className="relative aspect-square w-full bg-[#0F0F0F]">
+          {error ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
+              <Package
+                size={72}
+                strokeWidth={1.8}
+                className="text-[#2A2F35]"
+                aria-hidden
+              />
+              <p className="text-[length:var(--text-body-1)] font-semibold">
+                카메라를 열 수 없어요
+              </p>
+              <p className="text-[length:var(--text-body-2)] leading-normal text-ink-500">
+                {ERROR_MESSAGE[error]}
+              </p>
+            </div>
+          ) : (
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="aspect-square w-full max-w-md object-cover"
+              onCanPlay={() => setVideoReady(true)}
+              className="absolute inset-0 h-full w-full object-cover"
               style={previewUrl ? { display: 'none' } : undefined}
             />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute aspect-square w-full max-w-md border-2 border-paper/60"
-              style={previewUrl ? { display: 'none' } : undefined}
-            />
-            {previewUrl && (
-              <CapturePreview
-                url={previewUrl}
-                onUse={handleUse}
-                onRetake={handleRetake}
+          )}
+
+          {showHint && !error && (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4 text-center">
+              <Package
+                size={96}
+                strokeWidth={1.6}
+                className="text-[#2A2F35]"
+                aria-hidden
               />
-            )}
+              <p className="text-[length:var(--text-body-2)] leading-normal text-[#5A626A]">
+                {withObjectParticle(label)} 화면에 맞춰주세요
+              </p>
+            </div>
+          )}
+
+          {previewUrl && (
+            <CapturePreview
+              url={previewUrl}
+              onUse={handleUse}
+              onRetake={handleRetake}
+            />
+          )}
+        </section>
+
+        {!previewUrl && !error && (
+          <>
+            <p className="px-8 pb-4 pt-5 text-center text-[13px] leading-normal text-ink-300">
+              사물을 화면 중앙에 두고 셔터를 눌러주세요
+            </p>
+            <div className="flex items-center justify-between px-10 pb-6 pt-1">
+              <button
+                type="button"
+                disabled
+                aria-label="갤러리에서 선택"
+                className="flex h-12 w-12 items-center justify-center rounded-md bg-[#252A30] text-paper disabled:opacity-70"
+              >
+                <ImageIcon size={24} aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={handleCapture}
+                disabled={!stream}
+                aria-label="촬영"
+                className={cn(
+                  'flex h-20 w-20 items-center justify-center rounded-pill border-4 border-paper transition-opacity',
+                  !stream && 'opacity-50',
+                )}
+              >
+                <span className="h-[60px] w-[60px] rounded-pill bg-paper" />
+              </button>
+              <button
+                type="button"
+                disabled
+                aria-label="플래시"
+                className="flex h-12 w-12 items-center justify-center text-paper disabled:opacity-70"
+              >
+                <ZapOff size={24} aria-hidden />
+              </button>
+            </div>
+            <div className="flex h-6 items-center justify-center">
+              <span className="h-[5px] w-[134px] rounded-[3px] bg-paper" />
+            </div>
           </>
         )}
-      </div>
 
-      {!previewUrl && !error && (
-        <div className="flex items-center justify-center px-6 py-8">
-          <button
-            type="button"
-            onClick={handleCapture}
-            disabled={!stream}
-            aria-label="촬영"
-            className="flex h-16 w-16 items-center justify-center rounded-pill bg-paper text-ink-900 shadow-cell-glow disabled:opacity-50"
-          >
-            <Camera size={28} aria-hidden />
-          </button>
-        </div>
-      )}
+        {error && (
+          <div className="mt-auto flex flex-col gap-3 px-8 pb-10 pt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-12 rounded-pill bg-paper px-6 font-semibold text-ink-900"
+            >
+              닫기
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

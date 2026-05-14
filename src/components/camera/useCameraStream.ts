@@ -58,6 +58,7 @@ export function useCameraStream(facingMode: FacingMode): UseCameraStreamResult {
         }
         activeStream = s
         setStream(s)
+        setError(null)
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(classifyError(e))

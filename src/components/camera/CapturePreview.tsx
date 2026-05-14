@@ -10,18 +10,18 @@ interface CapturePreviewProps {
 
 export function CapturePreview({ url, onUse, onRetake }: CapturePreviewProps) {
   return (
-    <div className="flex w-full flex-col items-center gap-6 px-6">
+    <div className="absolute inset-0">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={url}
         alt="촬영 미리보기"
-        className="aspect-square w-full max-w-md rounded-card object-cover"
+        className="h-full w-full object-cover"
       />
-      <div className="flex w-full max-w-md items-center gap-3">
+      <div className="absolute bottom-4 left-4 right-4 flex items-center gap-3">
         <button
           type="button"
           onClick={onRetake}
-          className="flex flex-1 items-center justify-center gap-2 rounded-pill bg-paper/10 px-6 py-3 text-paper hover:bg-paper/20"
+          className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-pill bg-ink-900/70 px-5 text-paper backdrop-blur-sm hover:bg-ink-900"
         >
           <RefreshCw size={20} aria-hidden />
           다시 찍기
@@ -29,7 +29,7 @@ export function CapturePreview({ url, onUse, onRetake }: CapturePreviewProps) {
         <button
           type="button"
           onClick={onUse}
-          className="flex flex-1 items-center justify-center gap-2 rounded-pill bg-brand-primary px-6 py-3 font-semibold text-paper shadow-cell-glow hover:brightness-95"
+          className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-pill bg-brand-primary px-5 font-semibold text-paper shadow-cell-glow hover:brightness-95"
         >
           <Check size={20} aria-hidden />
           사용
