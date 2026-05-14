@@ -33,6 +33,12 @@
 
 ## Visual Decisions
 
+- Illustration master correction: `QCUGW` sticker-flat library is deprecated. Use
+  new Pencil master `vBjRp` (`04. Illustration Master 39종 (BingoCell Style)`),
+  copied from `03. Cell Library 39종`.
+- Future frontend work should not place 120px sticker cards inside 66px bingo
+  cells. The target is the existing BingoCell style: 30px lucide line icon +
+  10px label inside the 66px cell.
 - Native mobile status bars shown in Pencil are not implemented in the web UI. The app renders inside the browser/PWA viewport, so this remains intentional.
 - Home and Board are centered in wider desktop captures because the app frame is constrained to 390px. On actual mobile/PWA width the frame fills the viewport.
 - The Board no longer expands to tablet/desktop widths; this intentionally follows the Pencil mobile-first S2 frame.

@@ -2,7 +2,22 @@
 
 ## Decision
 
-Slice 7 can proceed with the React SVG strategy.
+Superseded on 2026-05-14 after Pencil review.
+
+The sticker-flat React SVG strategy should not be wired into the product board.
+The correct Pencil source of truth is now the BingoCell-style master copied from
+`03. Cell Library 39종`, not the previous large sticker illustration library.
+
+- Correct Pencil master: `vBjRp` — `04. Illustration Master 39종 (BingoCell Style)`
+- Deprecated Pencil master: `QCUGW` — `DEPRECATED - Illustration Library 39종 (Sticker-Flat)`
+- Product direction: keep the 66px `BingoCell/Idle` structure with a 30px lucide
+  line icon slot (`BRawi`) and 10px label (`DBUFO`).
+
+## Previous Gate Notes
+
+The notes below are retained as historical implementation context only.
+
+Slice 7 had previously proceeded with the React SVG strategy.
 
 The Pencil sample nodes for the day-1 gate use a manageable shape subset:
 
