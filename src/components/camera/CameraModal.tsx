@@ -4,7 +4,10 @@ import { ImageIcon, Package, RefreshCw, X, ZapOff } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { IconButton } from '@/components/ui'
 import { cropSquareFromVideo } from '@/lib/camera/cropSquare'
+import { getCategoryVisual, getSwatchVisual } from '@/lib/bingo/cellVisual'
+import { DynamicIcon } from '@/lib/icons/dynamic-icon'
 import { cn } from '@/lib/utils/cn'
+import type { CellMaster } from '@/types/cell'
 import { CapturePreview } from './CapturePreview'
 import {
   useCameraStream,
@@ -14,8 +17,7 @@ import {
 
 interface CameraModalProps {
   facingMode: FacingMode
-  label: string
-  hint?: string
+  cell: CellMaster
   onCapture: (blob: Blob) => void
   onClose: () => void
 }
@@ -39,11 +41,13 @@ function withObjectParticle(value: string) {
 
 export function CameraModal({
   facingMode,
-  label,
-  hint,
+  cell,
   onCapture,
   onClose,
 }: CameraModalProps) {
+  const label = cell.captureLabel ?? cell.label
+  const hint = cell.hint
+  const visual = getCategoryVisual(cell.category)
   const dialogRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
@@ -176,6 +180,7 @@ export function CameraModal({
             onClick={onClose}
           />
           <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-center">
+            <CameraTargetVisual cell={cell} iconClassName={visual.iconClassName} />
             <span className="text-[length:var(--text-micro)] font-medium leading-normal text-ink-300">
               찾기
             </span>
@@ -309,5 +314,45 @@ export function CameraModal({
         )}
       </div>
     </div>
+  )
+}
+
+interface CameraTargetVisualProps {
+  cell: CellMaster
+  iconClassName: string
+}
+
+function CameraTargetVisual({ cell, iconClassName }: CameraTargetVisualProps) {
+  if (cell.swatch) {
+    const swatch = getSwatchVisual(cell.swatch)
+    return (
+      <span
+        aria-hidden
+        className={cn(
+          'mb-0.5 h-7 w-7 rounded-pill border-2 shadow-[0_1px_3px_rgba(0,0,0,0.28)]',
+          swatch.className,
+        )}
+        style={swatch.style}
+      />
+    )
+  }
+
+  if (cell.textOnly) {
+    return (
+      <span className="mb-0.5 flex h-7 min-w-7 items-center justify-center rounded-pill bg-paper/10 px-2 text-[15px] font-bold leading-none text-paper">
+        {cell.label}
+      </span>
+    )
+  }
+
+  if (!cell.icon) return null
+  return (
+    <DynamicIcon
+      name={cell.icon}
+      size={26}
+      strokeWidth={1.9}
+      className={cn('mb-0.5', iconClassName)}
+      aria-hidden
+    />
   )
 }

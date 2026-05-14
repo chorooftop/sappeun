@@ -3,7 +3,8 @@ export type Category =
   | 'manmade'
   | 'animal'
   | 'time'
-  | 'mission'
+  | 'self'
+  | 'color'
   | 'special'
 
 export type CellVariant = 'QeQCU' | 'k4Srv' | 'rAdyJ'
@@ -23,6 +24,8 @@ export interface CellMaster {
   variant: CellVariant
   textOnly?: boolean
   fontSize?: number
+  swatch?: string
+  swatchLabel?: string
   camera?: CameraMode
   difficulty?: Difficulty
   noPhoto?: boolean

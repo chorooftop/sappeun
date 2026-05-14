@@ -66,8 +66,11 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
     () => new Map(),
   )
   const [cameraFor, setCameraFor] = useState<number | null>(null)
+  const [celebration, setCelebration] = useState<string | null>(null)
 
   const urlsRef = useRef<Set<string>>(new Set())
+  const previousLineTotalRef = useRef(0)
+  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const urls = urlsRef.current
@@ -82,6 +85,29 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
     () => collectBingoLinePositions(lines, side),
     [lines, side],
   )
+
+  useEffect(() => {
+    const previous = previousLineTotalRef.current
+    if (lines.total > previous) {
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current)
+      }
+      setCelebration(lines.total === 1 ? '빙고 완성!' : `${lines.total}줄 완성!`)
+      celebrationTimerRef.current = setTimeout(() => {
+        setCelebration(null)
+        celebrationTimerRef.current = null
+      }, 800)
+    }
+    previousLineTotalRef.current = lines.total
+  }, [lines.total])
+
+  useEffect(() => {
+    return () => {
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current)
+      }
+    }
+  }, [])
 
   const todayLabel = useMemo(() => {
     const d = new Date()
@@ -169,7 +195,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-1 flex-col bg-canvas text-ink-900">
+    <main className="relative mx-auto flex min-h-dvh w-full max-w-[390px] flex-1 flex-col bg-canvas text-ink-900">
       <header className="flex items-center justify-between gap-3 bg-paper px-4 py-3">
         <button
           type="button"
@@ -223,6 +249,15 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
           side === 5 ? 'grid-cols-5' : 'grid-cols-3',
         )}
       >
+        {celebration && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="pointer-events-none absolute left-1/2 top-[94px] z-10 -translate-x-1/2 rounded-pill bg-ink-900 px-4 py-2 text-sm font-semibold text-paper shadow-card animate-bingo-pop"
+          >
+            {celebration}
+          </div>
+        )}
         {cells.map((cell, i) => (
           <Cell
             key={`${cell.id}-${i}`}
@@ -263,8 +298,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
       {cameraFor !== null && activeCell && (
         <CameraModal
           facingMode={facingMode}
-          label={activeCell.captureLabel ?? activeCell.label}
-          hint={activeCell.hint}
+          cell={activeCell}
           onCapture={handleCapture}
           onClose={() => setCameraFor(null)}
         />

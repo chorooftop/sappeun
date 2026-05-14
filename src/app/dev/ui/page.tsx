@@ -8,6 +8,9 @@ import {
   Tag,
   TextField,
 } from '@/components/ui'
+import { getCategoryVisual, getSwatchVisual } from '@/lib/bingo/cellVisual'
+import { DynamicIcon } from '@/lib/icons/dynamic-icon'
+import type { Category } from '@/types/cell'
 
 export default function DevUiPage() {
   if (process.env.NODE_ENV === 'production') notFound()
@@ -145,9 +148,28 @@ export default function DevUiPage() {
             targets need extra capture guidance.
           </p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <PreviewTarget symbol="7" caption="숫자" hint="간판·주소·버스 번호" />
-            <PreviewTarget symbol="5" caption="숫자" hint="간판·주소·가격표" />
-            <PreviewTarget symbol="T" caption="글자" hint="간판·로고·티셔츠" />
+            <PreviewTarget symbol="7" caption="숫자 찾기" hint="간판·주소·버스 번호" />
+            <PreviewTarget symbol="5" caption="숫자 찾기" hint="간판·주소·가격표" />
+            <PreviewTarget symbol="T" caption="글자 찾기" hint="간판·로고·티셔츠" />
+          </div>
+        </section>
+
+        <section className="rounded-lg bg-paper px-8 py-6">
+          <h2 className="text-heading-1 font-bold leading-tight">
+            BingoCell Categories · tinted library
+          </h2>
+          <p className="mt-2 text-body-2 leading-normal text-ink-500">
+            Pencil source now separates category tint from actual target color.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <CategoryCell category="nature" icon="leaf" label="나뭇잎" />
+            <CategoryCell category="manmade" icon="signpost" label="표지판" />
+            <CategoryCell category="animal" icon="cat" label="고양이" />
+            <CategoryCell category="time" icon="clock" label="시계" />
+            <CategoryCell category="self" icon="smile" label="웃은 셀카" />
+            <ColorCell swatch="red" label="빨간색" />
+            <ColorCell swatch="black" label="검은색" />
+            <ColorCell swatch="rainbow" label="알록달록" />
           </div>
         </section>
       </div>
@@ -179,5 +201,58 @@ function PreviewTarget({ symbol, caption, hint }: PreviewTargetProps) {
         <span className="text-[11px] font-medium text-ink-500">{hint}</span>
       </figcaption>
     </figure>
+  )
+}
+
+interface CategoryCellProps {
+  category: Exclude<Category, 'color' | 'special'>
+  icon: string
+  label: string
+}
+
+function CategoryCell({ category, icon, label }: CategoryCellProps) {
+  const visual = getCategoryVisual(category)
+  return (
+    <div
+      className={`flex h-[66px] w-[66px] flex-col items-center justify-center gap-0.5 rounded-cell border-[1.5px] px-1 py-1 text-center ${visual.cellClassName}`}
+    >
+      <DynamicIcon
+        name={icon}
+        size={28}
+        strokeWidth={1.8}
+        className={visual.iconClassName}
+        aria-hidden
+      />
+      <span className={`line-clamp-2 text-[10px] font-semibold leading-[1.12] ${visual.labelClassName}`}>
+        {label}
+      </span>
+      <span className={`text-[9px] font-semibold leading-tight ${visual.labelClassName}`}>
+        색 찾기
+      </span>
+    </div>
+  )
+}
+
+interface ColorCellProps {
+  swatch: string
+  label: string
+}
+
+function ColorCell({ swatch, label }: ColorCellProps) {
+  const visual = getCategoryVisual('color')
+  const swatchVisual = getSwatchVisual(swatch)
+  return (
+    <div
+      className={`flex h-[66px] w-[66px] flex-col items-center justify-center gap-0.5 rounded-cell border-[1.5px] px-1 py-1 text-center ${visual.cellClassName}`}
+    >
+      <span
+        aria-hidden
+        className={`h-7 w-7 rounded-pill border-2 shadow-[0_1px_2px_rgba(26,32,36,0.12)] ${swatchVisual.className}`}
+        style={swatchVisual.style}
+      />
+      <span className={`line-clamp-2 text-[10px] font-semibold leading-[1.12] ${visual.labelClassName}`}>
+        {label}
+      </span>
+    </div>
   )
 }

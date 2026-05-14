@@ -46,8 +46,12 @@
   --color-cat-animal-ink: #E89548;
   --color-cat-time: #FFF1CF;
   --color-cat-time-ink: #B8842A;
+  --color-cat-self: #FFE0E5;
+  --color-cat-self-ink: #E8526C;
   --color-cat-mission: #FFE0E5;
-  --color-cat-mission-ink: #FF6B81;
+  --color-cat-mission-ink: #E8526C;
+  --color-cat-color: #E6F0FF;
+  --color-cat-color-ink: #3B82F6;
   --color-cat-free: #FF6B81;
   --color-cat-free-ink: #FFFFFF;
 
@@ -104,5 +108,34 @@ body {
       rgba(0, 0, 0, 0.2) 0%,
       rgba(0, 0, 0, 0.8) 100%
     );
+  }
+
+  @keyframes bingo-pop {
+    0% {
+      opacity: 0;
+      transform: translateY(8px) scale(0.96);
+    }
+    18% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    78% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.98);
+    }
+  }
+
+  .animate-bingo-pop {
+    animation: bingo-pop var(--duration-celebrate) ease-out both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-bingo-pop {
+      animation: none;
+    }
   }
 }

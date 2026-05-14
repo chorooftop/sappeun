@@ -2,6 +2,7 @@
 
 import { Check, Lock, X } from 'lucide-react'
 import type { MouseEvent } from 'react'
+import { getCategoryVisual, getSwatchVisual } from '@/lib/bingo/cellVisual'
 import { DynamicIcon } from '@/lib/icons/dynamic-icon'
 import { cn } from '@/lib/utils/cn'
 import type { CellMaster } from '@/types/cell'
@@ -33,11 +34,12 @@ export function Cell({
   onRemovePhoto,
 }: CellProps) {
   const accessibleLabel = cell.captureLabel ?? cell.label
+  const visual = getCategoryVisual(cell.category)
   const iconSize = dense ? 28 : 30
   const labelClassName = cn(
     'line-clamp-2 max-w-full break-keep px-0.5 font-semibold leading-[1.12]',
     dense ? 'text-[9.5px]' : 'text-[10px]',
-    marked ? 'text-paper' : 'text-ink-700',
+    marked ? 'text-paper' : visual.labelClassName,
   )
 
   if (photoUrl) {
@@ -131,7 +133,7 @@ export function Cell({
           ? 'border-brand-primary bg-brand-primary text-paper shadow-cell-glow'
           : noPhoto
             ? 'border-ink-300 bg-ink-50 text-ink-500'
-            : 'border-ink-300 bg-paper text-ink-700',
+            : visual.cellClassName,
         inBingoLine && BINGO_GLOW_CLASS,
       )}
     >
@@ -140,10 +142,10 @@ export function Cell({
           <span
             className={cn(
               'font-bold leading-none',
-              marked ? 'text-paper' : 'text-ink-700',
-            )}
-            style={{ fontSize: cell.fontSize ?? 24 }}
-          >
+                marked ? 'text-paper' : visual.labelClassName,
+              )}
+              style={{ fontSize: cell.fontSize ?? 24 }}
+            >
             {cell.label}
           </span>
           {cell.caption && (
@@ -167,6 +169,8 @@ export function Cell({
               className="text-paper"
               aria-hidden
             />
+          ) : cell.swatch ? (
+            <SwatchBadge swatch={cell.swatch} dense={dense} />
           ) : noPhoto ? (
             <Lock
               size={dense ? 23 : 24}
@@ -180,7 +184,7 @@ export function Cell({
                 name={cell.icon}
                 size={iconSize}
                 strokeWidth={1.8}
-                className="text-ink-700"
+                className={visual.iconClassName}
                 aria-hidden
               />
             )
@@ -188,8 +192,39 @@ export function Cell({
           <span className={labelClassName}>
             {cell.label}
           </span>
+          {cell.caption && (
+            <span
+              className={cn(
+                'font-semibold leading-tight',
+                dense ? 'text-[8.5px]' : 'text-[9px]',
+                marked ? 'text-paper/90' : visual.labelClassName,
+              )}
+            >
+              {cell.caption}
+            </span>
+          )}
         </>
       )}
     </button>
+  )
+}
+
+interface SwatchBadgeProps {
+  swatch: string
+  dense: boolean
+}
+
+function SwatchBadge({ swatch, dense }: SwatchBadgeProps) {
+  const visual = getSwatchVisual(swatch)
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'shrink-0 rounded-pill border-2 shadow-[0_1px_2px_rgba(26,32,36,0.12)]',
+        dense ? 'h-6 w-6' : 'h-7 w-7',
+        visual.className,
+      )}
+      style={visual.style}
+    />
   )
 }

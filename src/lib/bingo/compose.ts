@@ -16,7 +16,8 @@ interface Recipe {
     manmade: number
     animal: number
     time: number
-    mission: number
+    self: number
+    color: number
   }
 }
 
@@ -24,17 +25,17 @@ const RECIPES: Record<BoardMode, Recipe> = {
   '5x5': {
     size: 25,
     freePosition: 12,
-    picks: { nature: 6, manmade: 7, animal: 5, time: 3, mission: 3 },
+    picks: { nature: 6, manmade: 6, animal: 4, time: 2, self: 3, color: 3 },
   },
   standard: {
     size: 25,
     freePosition: 12,
-    picks: { nature: 6, manmade: 7, animal: 5, time: 3, mission: 3 },
+    picks: { nature: 6, manmade: 6, animal: 4, time: 2, self: 3, color: 3 },
   },
   '3x3': {
     size: 9,
     freePosition: 4,
-    picks: { nature: 3, manmade: 3, animal: 1, time: 0, mission: 1 },
+    picks: { nature: 3, manmade: 2, animal: 1, time: 0, self: 1, color: 1 },
   },
 }
 
@@ -45,7 +46,8 @@ export function composeBoard(mode: BoardMode, rng?: () => number): ComposeResult
     ...pickRandom(CELLS_BY_CATEGORY.manmade, recipe.picks.manmade, rng),
     ...pickRandom(CELLS_BY_CATEGORY.animal, recipe.picks.animal, rng),
     ...pickRandom(CELLS_BY_CATEGORY.time, recipe.picks.time, rng),
-    ...pickRandom(CELLS_BY_CATEGORY.mission, recipe.picks.mission, rng),
+    ...pickRandom(CELLS_BY_CATEGORY.self, recipe.picks.self, rng),
+    ...pickRandom(CELLS_BY_CATEGORY.color, recipe.picks.color, rng),
   ]
 
   const shuffled = shuffle(picks, rng)

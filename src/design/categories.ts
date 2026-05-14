@@ -10,7 +10,8 @@ export const CATEGORY_STYLE: Record<
   manmade: { iconClass: 'text-cat-manmade-ink' },
   animal: { iconClass: 'text-cat-animal-ink' },
   time: { iconClass: 'text-cat-time-ink' },
-  mission: { iconClass: 'text-brand-accent' },
+  self: { iconClass: 'text-cat-self-ink' },
+  color: { iconClass: 'text-cat-color-ink' },
   special: { iconClass: 'text-brand-accent' },
 }
 
@@ -19,6 +20,7 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   manmade: '인공물',
   animal: '동물',
   time: '시간·숫자',
-  mission: '미션',
+  self: '셀프',
+  color: '색깔',
   special: '특수',
 }

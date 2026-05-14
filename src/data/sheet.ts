@@ -20,6 +20,7 @@ export const CELLS_BY_CATEGORY = {
   manmade: getCellsByCategory('manmade'),
   animal: getCellsByCategory('animal'),
   time: getCellsByCategory('time'),
-  mission: getCellsByCategory('mission'),
+  self: getCellsByCategory('self'),
+  color: getCellsByCategory('color'),
   special: getCellsByCategory('special'),
 } as const
