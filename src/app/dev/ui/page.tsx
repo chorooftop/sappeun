@@ -8,62 +8,6 @@ import {
   Tag,
   TextField,
 } from '@/components/ui'
-import { Illust, type IllustKey } from '@/components/illust'
-
-const NATURE_ILLUST_PREVIEW: ReadonlyArray<{
-  label: string
-  name: IllustKey
-  pencilNode: string
-}> = [
-  { label: '꽃', name: 'flower', pencilNode: 'TEUMp' },
-  { label: '나뭇잎', name: 'natureLeaf', pencilNode: '43jQ0' },
-  { label: '민들레', name: 'dandelion', pencilNode: 'R4nEb' },
-  { label: '화분', name: 'pottedPlant', pencilNode: 'ZfTPv' },
-  { label: '나무', name: 'tree', pencilNode: '6wNxN' },
-  { label: '구름', name: 'cloud', pencilNode: 'mL1Xy' },
-  { label: '햇빛', name: 'sunlight', pencilNode: 'yWRog' },
-  { label: '무지개', name: 'rainbow', pencilNode: 'rR3JN' },
-]
-
-const MANMADE_ILLUST_PREVIEW: ReadonlyArray<{
-  label: string
-  name: IllustKey
-  pencilNode: string
-}> = [
-  { label: '자판기', name: 'vendingMachine', pencilNode: 'XjVpp' },
-  { label: '표지판', name: 'signpost', pencilNode: 'YUZPf' },
-  { label: '공중전화', name: 'publicPhone', pencilNode: 'BMaHR' },
-  { label: '우체통', name: 'mailbox', pencilNode: 'SiUOu' },
-  { label: '가로등', name: 'streetLamp', pencilNode: 'Pj5AU' },
-  { label: '자전거', name: 'bicycle', pencilNode: '5k84g' },
-  { label: '우산', name: 'umbrella', pencilNode: 'Z6pd9' },
-  { label: '의자', name: 'chair', pencilNode: '0fzlN' },
-  { label: '벽화', name: 'mural', pencilNode: 'OHKjM' },
-  { label: '횡단보도', name: 'crosswalk', pencilNode: 'QTTTc' },
-]
-
-const ANIMAL_ILLUST_PREVIEW: ReadonlyArray<{
-  label: string
-  name: IllustKey
-  pencilNode: string
-}> = [
-  { label: '고양이', name: 'cat', pencilNode: '5WE4s' },
-  { label: '강아지', name: 'dog', pencilNode: 'd3vvN' },
-  { label: '참새', name: 'sparrow', pencilNode: '6DLrw' },
-  { label: '나비', name: 'butterfly', pencilNode: 'Adka8' },
-  { label: '비둘기', name: 'pigeon', pencilNode: 'mfhbu' },
-  { label: '물고기', name: 'fish', pencilNode: 'j3RBu' },
-]
-
-const TIME_ILLUST_PREVIEW: ReadonlyArray<{
-  label: string
-  name: IllustKey
-  pencilNode: string
-}> = [
-  { label: '시계', name: 'clock', pencilNode: 'l5HdD' },
-  { label: '달', name: 'moon', pencilNode: 'i7WBM' },
-  { label: '별', name: 'star', pencilNode: 'f9U3R' },
-]
 
 export default function DevUiPage() {
   if (process.env.NODE_ENV === 'production') notFound()
@@ -193,47 +137,13 @@ export default function DevUiPage() {
 
         <section className="rounded-lg bg-paper px-8 py-6">
           <h2 className="text-heading-1 font-bold leading-tight">
-            Illustration Gate · Stable 27
+            BingoCell Targets · text-only guidance
           </h2>
           <p className="mt-2 text-body-2 leading-normal text-ink-500">
-            Slice 7 stable sets from `new.pen`: Nature 8 / Manmade 10 /
-            Animal 6 / Time 3.
+            Pencil source of truth: `04. Illustration Master 39종 (BingoCell
+            Style)`. Keep line icons in the 30px icon slot; only text-only
+            targets need extra capture guidance.
           </p>
-          <h3 className="mt-5 text-title font-bold leading-tight text-brand-primary">
-            자연·식물
-          </h3>
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            {NATURE_ILLUST_PREVIEW.map((item) => (
-              <PreviewIllust key={item.name} {...item} />
-            ))}
-          </div>
-          <h3 className="mt-6 text-title font-bold leading-tight text-warning">
-            인공물
-          </h3>
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            {MANMADE_ILLUST_PREVIEW.map((item) => (
-              <PreviewIllust key={item.name} {...item} />
-            ))}
-          </div>
-          <h3 className="mt-6 text-title font-bold leading-tight text-brand-primary">
-            동물
-          </h3>
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            {ANIMAL_ILLUST_PREVIEW.map((item) => (
-              <PreviewIllust key={item.name} {...item} />
-            ))}
-          </div>
-          <h3 className="mt-6 text-title font-bold leading-tight text-brand-accent">
-            시간·하늘
-          </h3>
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            {TIME_ILLUST_PREVIEW.map((item) => (
-              <PreviewIllust key={item.name} {...item} />
-            ))}
-          </div>
-          <h3 className="mt-6 text-title font-bold leading-tight text-ink-700">
-            문자·숫자 촬영 힌트
-          </h3>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             <PreviewTarget symbol="7" caption="숫자" hint="간판·주소·버스 번호" />
             <PreviewTarget symbol="5" caption="숫자" hint="간판·주소·가격표" />
@@ -242,26 +152,6 @@ export default function DevUiPage() {
         </section>
       </div>
     </main>
-  )
-}
-
-interface PreviewIllustProps {
-  label: string
-  name: IllustKey
-  pencilNode: string
-}
-
-function PreviewIllust({ label, name, pencilNode }: PreviewIllustProps) {
-  return (
-    <figure className="flex w-32 flex-col items-center gap-2 rounded-md border border-ink-100 bg-canvas p-3">
-      <Illust name={name} title={label} size={96} />
-      <figcaption className="flex flex-col items-center text-center leading-normal">
-        <span className="text-caption font-semibold text-ink-700">{label}</span>
-        <span className="text-[10px] font-medium text-ink-500">
-          {pencilNode}
-        </span>
-      </figcaption>
-    </figure>
   )
 }
 

@@ -12,10 +12,13 @@ The correct Pencil source of truth is now the BingoCell-style master copied from
 - Deprecated Pencil master: `QCUGW` — `DEPRECATED - Illustration Library 39종 (Sticker-Flat)`
 - Product direction: keep the 66px `BingoCell/Idle` structure with a 30px lucide
   line icon slot (`BRawi`) and 10px label (`DBUFO`).
+- Code cleanup: the obsolete `src/components/illust/` sticker SVG implementation
+  and `/dev/ui` Stable 27 preview have been removed from the product codebase.
 
-## Previous Gate Notes
+## Deprecated Gate Notes
 
 The notes below are retained as historical implementation context only.
+Do not use them as implementation direction.
 
 Slice 7 had previously proceeded with the React SVG strategy.
 
@@ -64,9 +67,9 @@ This is enough to represent the initial sticker-flat illustration style without 
 The stable non-mission illustration gate is now complete: nature 8/8, manmade
 10/10, animal 6/6, and time icon 3/3.
 
-## Files
+## Deprecated Files
 
-- Components: `src/components/illust/`
+- Components: removed from `src/components/illust/`
 - Preview: `src/app/dev/ui/page.tsx`
 - Pencil captures:
   - `/tmp/sappeun-pencil-illust-gate/43jQ0.png`
@@ -110,8 +113,9 @@ The stable non-mission illustration gate is now complete: nature 8/8, manmade
 - Components use `viewBox="0 0 120 120"` because the Pencil sample nodes are 120x120 sticker frames.
 - `StickerFrame` centralizes the shared 120x120 rounded frame, fill, and ink stroke.
 - The `Rainbow` component converts Pencil's `sweepAngle: 180` ellipses into SVG half-ellipse paths.
-- Stable 27 mappings are exposed through both `ILLUST_BY_ICON` and `ILLUST_BY_CELL_ID`. The cell-id map is required because `참새` and `비둘기` both use the source `bird` icon name.
-- Product board rendering still uses lucide icons for now. Switch board cells to `ILLUST_BY_CELL_ID` when the product is ready to move from fallback icons to Pencil sticker artwork in one visual pass.
+- Stable 27 mappings were removed with the obsolete sticker SVG implementation.
+- Product board rendering should stay on lucide icons through `DynamicIcon`, matching
+  Pencil `BingoCell/Idle`.
 
 ## Next Step
 
