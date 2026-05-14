@@ -22,8 +22,8 @@ interface CameraModalProps {
   onClose: () => void
 }
 
-const CAPTURE_SIZE = 300
-const CAPTURE_QUALITY = 0.85
+const CAPTURE_TARGET_SIZE = 1024
+const CAPTURE_QUALITY = 0.92
 
 const ERROR_MESSAGE: Record<CameraError, string> = {
   'permission-denied': '카메라 권한이 거부되었어요. 브라우저 설정에서 허용해주세요.',
@@ -114,13 +114,30 @@ export function CameraModal({
   }, [previewUrl])
 
   async function handleCapture() {
-    if (!videoRef.current) return
+    const video = videoRef.current
+    if (!video) return
     try {
       const blob = await cropSquareFromVideo(
-        videoRef.current,
-        CAPTURE_SIZE,
+        video,
+        CAPTURE_TARGET_SIZE,
         CAPTURE_QUALITY,
       )
+      if (process.env.NODE_ENV === 'development') {
+        const sourceWidth = video.videoWidth
+        const sourceHeight = video.videoHeight
+        const outputSize = Math.min(
+          CAPTURE_TARGET_SIZE,
+          sourceWidth,
+          sourceHeight,
+        )
+        console.info('[camera:capture]', {
+          sourceWidth,
+          sourceHeight,
+          outputSize,
+          blobSize: blob.size,
+          trackSettings: stream?.getVideoTracks()[0]?.getSettings(),
+        })
+      }
       setPreviewBlob(blob)
       setPreviewUrl(URL.createObjectURL(blob))
     } catch (e) {
