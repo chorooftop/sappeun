@@ -1,9 +1,9 @@
 'use client'
 
 import { Check, X } from 'lucide-react'
-import { DynamicIcon, type IconName } from 'lucide-react/dynamic'
 import type { MouseEvent } from 'react'
 import { CATEGORY_STYLE } from '@/design/categories'
+import { DynamicIcon } from '@/lib/icons/dynamic-icon'
 import { cn } from '@/lib/utils/cn'
 import type { CellMaster } from '@/types/cell'
 
@@ -135,7 +135,7 @@ export function Cell({
           ) : (
             cell.icon && (
               <DynamicIcon
-                name={cell.icon as IconName}
+                name={cell.icon}
                 size={28}
                 strokeWidth={1.8}
                 className={style.iconClass}
