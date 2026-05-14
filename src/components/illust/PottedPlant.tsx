@@ -1,6 +1,6 @@
 import { getA11yProps, StickerFrame, type IllustSvgProps } from './base'
 
-export function NatureLeaf({
+export function PottedPlant({
   size = 120,
   title,
   ...props
@@ -15,13 +15,22 @@ export function NatureLeaf({
       {...props}
     >
       <StickerFrame />
-      <path
-        d="M60 18c30 20 30 60 0 84-30-24-30-64 0-84z"
-        fill="#3DBC8A"
+      <rect x="58" y="50" width="4" height="24" fill="#3DBC8A" />
+      <ellipse
+        cx="60"
+        cy="36"
+        rx="22"
+        ry="18"
+        fill="#FFC857"
         stroke="#1A2024"
         strokeWidth="2"
       />
-      <rect x="59" y="24" width="2" height="74" fill="#1A2024" />
+      <path
+        d="M34 72h52v30a8 8 0 0 1-8 8H42a8 8 0 0 1-8-8V72z"
+        fill="#FF6B81"
+        stroke="#1A2024"
+        strokeWidth="2"
+      />
     </svg>
   )
 }

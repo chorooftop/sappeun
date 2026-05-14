@@ -8,7 +8,22 @@ import {
   Tag,
   TextField,
 } from '@/components/ui'
-import { Illust } from '@/components/illust'
+import { Illust, type IllustKey } from '@/components/illust'
+
+const NATURE_ILLUST_PREVIEW: ReadonlyArray<{
+  label: string
+  name: IllustKey
+  pencilNode: string
+}> = [
+  { label: '꽃', name: 'flower', pencilNode: 'TEUMp' },
+  { label: '나뭇잎', name: 'natureLeaf', pencilNode: '43jQ0' },
+  { label: '민들레', name: 'dandelion', pencilNode: 'R4nEb' },
+  { label: '화분', name: 'pottedPlant', pencilNode: 'ZfTPv' },
+  { label: '나무', name: 'tree', pencilNode: '6wNxN' },
+  { label: '구름', name: 'cloud', pencilNode: 'mL1Xy' },
+  { label: '햇빛', name: 'sunlight', pencilNode: 'yWRog' },
+  { label: '무지개', name: 'rainbow', pencilNode: 'rR3JN' },
+]
 
 export default function DevUiPage() {
   if (process.env.NODE_ENV === 'production') notFound()
@@ -138,15 +153,15 @@ export default function DevUiPage() {
 
         <section className="rounded-lg bg-paper px-8 py-6">
           <h2 className="text-heading-1 font-bold leading-tight">
-            Illustration Gate · Pencil SVG samples
+            Illustration Gate · Nature 8
           </h2>
           <p className="mt-2 text-body-2 leading-normal text-ink-500">
-            Slice 7 day-1 samples from `new.pen`: 43jQ0, rR3JN, XjVpp.
+            Slice 7 stable nature set from `new.pen`: 8 sticker-flat SVGs.
           </p>
-          <div className="mt-4 flex flex-wrap items-center gap-5">
-            <PreviewIllust label="나뭇잎" name="natureLeaf" />
-            <PreviewIllust label="무지개" name="rainbow" />
-            <PreviewIllust label="자판기" name="vendingMachine" />
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            {NATURE_ILLUST_PREVIEW.map((item) => (
+              <PreviewIllust key={item.name} {...item} />
+            ))}
           </div>
         </section>
       </div>
@@ -156,15 +171,19 @@ export default function DevUiPage() {
 
 interface PreviewIllustProps {
   label: string
-  name: 'natureLeaf' | 'rainbow' | 'vendingMachine'
+  name: IllustKey
+  pencilNode: string
 }
 
-function PreviewIllust({ label, name }: PreviewIllustProps) {
+function PreviewIllust({ label, name, pencilNode }: PreviewIllustProps) {
   return (
     <figure className="flex w-32 flex-col items-center gap-2 rounded-md border border-ink-100 bg-canvas p-3">
       <Illust name={name} title={label} size={96} />
-      <figcaption className="text-caption font-semibold leading-normal text-ink-700">
-        {label}
+      <figcaption className="flex flex-col items-center text-center leading-normal">
+        <span className="text-caption font-semibold text-ink-700">{label}</span>
+        <span className="text-[10px] font-medium text-ink-500">
+          {pencilNode}
+        </span>
       </figcaption>
     </figure>
   )

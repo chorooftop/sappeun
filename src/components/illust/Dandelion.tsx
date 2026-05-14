@@ -1,10 +1,6 @@
 import { getA11yProps, StickerFrame, type IllustSvgProps } from './base'
 
-export function NatureLeaf({
-  size = 120,
-  title,
-  ...props
-}: IllustSvgProps) {
+export function Dandelion({ size = 120, title, ...props }: IllustSvgProps) {
   return (
     <svg
       viewBox="0 0 120 120"
@@ -15,13 +11,23 @@ export function NatureLeaf({
       {...props}
     >
       <StickerFrame />
-      <path
-        d="M60 18c30 20 30 60 0 84-30-24-30-64 0-84z"
-        fill="#3DBC8A"
+      <circle
+        cx="60"
+        cy="45"
+        r="31"
+        fill="#FFFFFF"
         stroke="#1A2024"
         strokeWidth="2"
       />
-      <rect x="59" y="24" width="2" height="74" fill="#1A2024" />
+      <rect
+        x="58"
+        y="70"
+        width="4"
+        height="36"
+        rx="2"
+        fill="#3DBC8A"
+        stroke="#1A2024"
+      />
     </svg>
   )
 }

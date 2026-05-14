@@ -1,4 +1,4 @@
-import { getA11yProps, type IllustSvgProps } from './base'
+import { getA11yProps, StickerFrame, type IllustSvgProps } from './base'
 
 function halfEllipsePath(x: number, y: number, width: number, height: number) {
   const rx = width / 2
@@ -17,16 +17,7 @@ export function Rainbow({ size = 120, title, ...props }: IllustSvgProps) {
       {...getA11yProps(title)}
       {...props}
     >
-      <rect width="120" height="120" rx="16" fill="#D8F1E6" />
-      <rect
-        x="1"
-        y="1"
-        width="118"
-        height="118"
-        rx="15"
-        stroke="#1A2024"
-        strokeWidth="2"
-      />
+      <StickerFrame />
       <path
         d={halfEllipsePath(10, 30, 100, 80)}
         fill="#FF6B81"
