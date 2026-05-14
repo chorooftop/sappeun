@@ -4,19 +4,25 @@ import {
   Ban,
   Camera,
   ChevronRight,
-  Hand,
+  Clock3,
   Menu,
   Printer,
   Shield,
   Users,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { HomeHero } from '@/components/home/HomeHero'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { Badge, Button, IconButton, TextField } from '@/components/ui'
+import {
+  clearActiveBoardSession,
+  loadActiveBoardSession,
+} from '@/lib/bingo/persistence'
 import { cn } from '@/lib/utils/cn'
 import type { BoardMode } from '@/types/bingo'
+import type { PersistedBoardSessionV1 } from '@/types/persisted-board'
 
 type SelectableMode = BoardMode
 
@@ -32,13 +38,46 @@ export default function Home() {
   const router = useRouter()
   const [nickname, setNickname] = useState('')
   const [mode, setMode] = useState<SelectableMode>('5x5')
+  const [activeSession, setActiveSession] =
+    useState<PersistedBoardSessionV1 | null>(null)
   const trimmed = nickname.trim()
   const canStart = trimmed.length > 0
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setActiveSession(loadActiveBoardSession())
+    }, 0)
+    return () => window.clearTimeout(timeout)
+  }, [])
+
   function handleStart() {
     if (!canStart) return
+    if (activeSession) {
+      const ok = window.confirm(
+        '진행 중인 산책을 지우고 새로 시작할까요?',
+      )
+      if (!ok) return
+      clearActiveBoardSession()
+      setActiveSession(null)
+    }
     const qs = new URLSearchParams({ mode, nickname: trimmed })
     router.push(`/bingo?${qs.toString()}`)
+  }
+
+  function handleContinue() {
+    if (!activeSession) return
+    const qs = new URLSearchParams({
+      mode: activeSession.mode,
+      nickname: activeSession.nickname,
+    })
+    router.push(`/bingo?${qs.toString()}`)
+  }
+
+  function handleClearSession() {
+    const ok = window.confirm('진행 중인 산책 기록을 지울까요?')
+    if (!ok) return
+    clearActiveBoardSession()
+    setActiveSession(null)
   }
 
   return (
@@ -53,6 +92,14 @@ export default function Home() {
 
       <div className="flex flex-1 flex-col gap-5 px-4 pb-4 pt-5">
         <HomeHero />
+
+        {activeSession && (
+          <ContinueWalkPanel
+            session={activeSession}
+            onContinue={handleContinue}
+            onClear={handleClearSession}
+          />
+        )}
 
         <TextField
           id="nickname"
@@ -74,13 +121,6 @@ export default function Home() {
             onSizeChange={setMode}
           />
           <ModeCard
-            icon={Hand}
-            title="스탠다드 모드"
-            description="사진 없이 가볍게 마킹"
-            selected={mode === 'standard'}
-            onClick={() => setMode('standard')}
-          />
-          <ModeCard
             icon={Printer}
             title="인쇄 모드"
             description="종이 빙고로 출력하기"
@@ -94,10 +134,64 @@ export default function Home() {
 
       <footer className="fixed bottom-0 left-1/2 z-20 w-full max-w-[390px] -translate-x-1/2 border-t border-ink-100 bg-paper px-4 pb-8 pt-4">
         <Button fullWidth size="lg" disabled={!canStart} onClick={handleStart}>
-          산책 시작하기
+          {activeSession ? '새 산책 시작하기' : '산책 시작하기'}
         </Button>
       </footer>
     </main>
+  )
+}
+
+interface ContinueWalkPanelProps {
+  session: PersistedBoardSessionV1
+  onContinue: () => void
+  onClear: () => void
+}
+
+function ContinueWalkPanel({
+  session,
+  onContinue,
+  onClear,
+}: ContinueWalkPanelProps) {
+  const total = session.cellIds.length
+  const completed = session.markedPositions.length
+  const dateLabel = new Intl.DateTimeFormat('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(session.updatedAt))
+
+  return (
+    <section
+      aria-label="진행 중인 산책"
+      className="flex flex-col gap-3 rounded-lg border border-brand-primary/30 bg-brand-primary-soft p-4"
+    >
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand-primary text-paper">
+          <Clock3 size={20} aria-hidden />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <p className="text-[length:var(--text-body-1)] font-semibold leading-normal text-ink-900">
+            진행 중인 산책이 있어요
+          </p>
+          <p className="text-[length:var(--text-caption)] leading-normal text-ink-700">
+            {`${session.mode} · ${session.nickname} · ${completed}/${total} · ${dateLabel}`}
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <Button size="md" onClick={onContinue}>
+          이어하기
+        </Button>
+        <Button
+          size="md"
+          variant="tertiary"
+          onClick={onClear}
+          aria-label="진행 중인 산책 지우기"
+          className="px-4"
+        >
+          지우기
+        </Button>
+      </div>
+    </section>
   )
 }
 
@@ -180,7 +274,7 @@ function SizeChip({ label, selected, onClick }: SizeChipProps) {
 }
 
 interface ModeCardProps {
-  icon: typeof Hand
+  icon: LucideIcon
   title: string
   description: string
   selected?: boolean

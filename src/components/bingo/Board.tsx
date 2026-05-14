@@ -7,9 +7,20 @@ import { CameraModal } from '@/components/camera/CameraModal'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import type { FacingMode } from '@/components/camera/useCameraStream'
 import { checkBingoLines } from '@/lib/bingo/checkBingoLines'
+import { composeBoardFromCellIds } from '@/lib/bingo/compose'
+import {
+  clearActiveBoardSession,
+  loadActiveBoardSession,
+  saveBoardSession,
+} from '@/lib/bingo/persistence'
+import {
+  createBoardSession,
+  filterPersistableMarkedPositions,
+} from '@/lib/bingo/session'
 import { cn } from '@/lib/utils/cn'
 import type { BoardMode } from '@/types/bingo'
 import type { CellMaster } from '@/types/cell'
+import type { PersistedBoardSessionV1 } from '@/types/persisted-board'
 import { Cell } from './Cell'
 
 interface BoardProps {
@@ -53,15 +64,22 @@ function isNoPhotoCell(cell: CellMaster): boolean {
   return cell.noPhoto === true
 }
 
-export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) {
+export function BingoBoard({
+  mode,
+  nickname,
+  cells,
+  freePosition,
+}: BoardProps) {
   const router = useRouter()
-  const size = cells.length
+  const [boardCells, setBoardCells] = useState<readonly CellMaster[]>(cells)
+  const [boardFreePosition, setBoardFreePosition] = useState(freePosition)
+  const [sessionChecked, setSessionChecked] = useState(false)
+  const size = boardCells.length
   const side = Math.sqrt(size)
-  const isPhotoMode = mode !== 'standard'
   const isDenseBoard = side === 5
 
   const [marked, setMarked] = useState<ReadonlySet<number>>(
-    () => new Set([freePosition]),
+    () => new Set([boardFreePosition]),
   )
   const [photos, setPhotos] = useState<ReadonlyMap<number, PhotoEntry>>(
     () => new Map(),
@@ -70,8 +88,10 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
   const [celebration, setCelebration] = useState<string | null>(null)
 
   const urlsRef = useRef<Set<string>>(new Set())
+  const sessionRef = useRef<PersistedBoardSessionV1 | null>(null)
   const previousLineTotalRef = useRef(0)
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [sessionReady, setSessionReady] = useState(false)
 
   useEffect(() => {
     const urls = urlsRef.current
@@ -80,6 +100,78 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
       urls.clear()
     }
   }, [])
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const activeSession = loadActiveBoardSession()
+      if (
+        activeSession &&
+        activeSession.mode === mode &&
+        activeSession.nickname === nickname
+      ) {
+        const restored = composeBoardFromCellIds(
+          activeSession.mode,
+          activeSession.cellIds,
+          activeSession.freePosition,
+        )
+
+        if (restored) {
+          setBoardCells(restored.cells)
+          setBoardFreePosition(restored.freePosition)
+          setMarked(
+            new Set(
+              filterPersistableMarkedPositions(
+                activeSession.markedPositions,
+                restored.cells,
+                restored.freePosition,
+              ),
+            ),
+          )
+          sessionRef.current = activeSession
+          setSessionReady(true)
+          setSessionChecked(true)
+          return
+        }
+
+        clearActiveBoardSession()
+      }
+
+      const nextSession = createBoardSession({
+        mode,
+        nickname,
+        cells,
+        freePosition,
+      })
+      setBoardCells(cells)
+      setBoardFreePosition(freePosition)
+      setMarked(new Set(nextSession.markedPositions))
+      sessionRef.current = nextSession
+      saveBoardSession(nextSession)
+      setSessionReady(true)
+      setSessionChecked(true)
+    }, 0)
+
+    return () => window.clearTimeout(timeout)
+  }, [cells, freePosition, mode, nickname])
+
+  useEffect(() => {
+    if (!sessionReady || !sessionRef.current) return
+
+    const nextSession: PersistedBoardSessionV1 = {
+      ...sessionRef.current,
+      updatedAt: new Date().toISOString(),
+      freePosition: boardFreePosition,
+      cellIds: boardCells.map((cell) => cell.id),
+      markedPositions: filterPersistableMarkedPositions(
+        marked,
+        boardCells,
+        boardFreePosition,
+      ),
+    }
+
+    sessionRef.current = nextSession
+    saveBoardSession(nextSession)
+  }, [boardCells, boardFreePosition, marked, sessionReady])
 
   const lines = useMemo(() => checkBingoLines(marked, size), [marked, size])
   const bingoLinePositions = useMemo(
@@ -130,8 +222,9 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
   }
 
   function handleCellTap(position: number) {
-    const cell = cells[position]
-    if (isPhotoMode && !isNoPhotoCell(cell)) {
+    if (position === boardFreePosition) return
+    const cell = boardCells[position]
+    if (!isNoPhotoCell(cell)) {
       setCameraFor(position)
       return
     }
@@ -183,16 +276,52 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
 
   function handleEnd() {
     const ok = window.confirm('산책을 종료할까요? 촬영한 사진은 사라집니다.')
-    if (ok) router.push('/')
+    if (ok) {
+      clearActiveBoardSession()
+      router.push('/')
+    }
   }
 
-  const activeCell = cameraFor !== null ? cells[cameraFor] : null
+  const activeCell = cameraFor !== null ? boardCells[cameraFor] : null
   const facingMode: FacingMode =
     activeCell?.camera === 'front' ? 'user' : 'environment'
 
   function handleShuffle() {
     const ok = window.confirm('칸을 다시 섞을까요? 현재 진행이 사라집니다.')
-    if (ok) window.location.reload()
+    if (ok) {
+      clearActiveBoardSession()
+      window.location.reload()
+    }
+  }
+
+  if (!sessionChecked) {
+    return (
+      <main className="relative mx-auto flex min-h-dvh w-full max-w-[390px] flex-1 flex-col bg-canvas text-ink-900">
+        <header className="flex items-center justify-between gap-3 bg-paper px-4 py-3">
+          <button
+            type="button"
+            onClick={handleEnd}
+            aria-label="산책 종료"
+            className="flex h-11 w-11 items-center justify-center rounded-pill text-ink-900 transition-colors hover:bg-ink-100"
+          >
+            <X size={22} aria-hidden />
+          </button>
+          <div className="flex flex-1 flex-col items-center text-center">
+            <span className="text-[15px] font-semibold text-ink-900">
+              {nickname}
+            </span>
+            <span className="text-[11px] text-ink-500">
+              오늘 산책 · {todayLabel}
+            </span>
+          </div>
+          <ThemeToggle compact />
+        </header>
+
+        <div className="flex flex-1 items-center justify-center px-4 text-sm font-semibold text-ink-500">
+          진행 중인 산책을 불러오는 중
+        </div>
+      </main>
+    )
   }
 
   return (
@@ -252,7 +381,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
             {celebration}
           </div>
         )}
-        {cells.map((cell, i) => (
+        {boardCells.map((cell, i) => (
           <Cell
             key={`${cell.id}-${i}`}
             cell={cell}
@@ -260,7 +389,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
             inBingoLine={bingoLinePositions.has(i)}
             dense={isDenseBoard}
             noPhoto={isNoPhotoCell(cell)}
-            isFree={i === freePosition}
+            isFree={i === boardFreePosition}
             photoUrl={photos.get(i)?.url}
             onToggle={() => handleCellTap(i)}
             onRemovePhoto={

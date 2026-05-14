@@ -1,4 +1,4 @@
-export type BoardMode = '5x5' | '3x3' | 'standard'
+export type BoardMode = '5x5' | '3x3'
 
 export type CellState = 'idle' | 'marked' | 'free'
 

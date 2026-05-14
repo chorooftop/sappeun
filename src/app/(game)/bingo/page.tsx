@@ -3,7 +3,7 @@ import { BingoBoard } from '@/components/bingo/Board'
 import { composeBoard } from '@/lib/bingo/compose'
 import type { BoardMode } from '@/types/bingo'
 
-const VALID_MODES: ReadonlyArray<BoardMode> = ['standard', '5x5', '3x3']
+const VALID_MODES: ReadonlyArray<BoardMode> = ['5x5', '3x3']
 
 function isBoardMode(value: string | undefined): value is BoardMode {
   return value !== undefined && (VALID_MODES as readonly string[]).includes(value)

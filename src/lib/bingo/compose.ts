@@ -1,4 +1,4 @@
-import { CELLS_BY_CATEGORY, FREE_CELL } from '@/data/sheet'
+import { CELLS_BY_CATEGORY, FREE_CELL, getCellById } from '@/data/sheet'
 import type { CellMaster } from '@/types/cell'
 import type { BoardMode } from '@/types/bingo'
 import { pickRandom, shuffle } from './shuffle'
@@ -23,11 +23,6 @@ interface Recipe {
 
 const RECIPES: Record<BoardMode, Recipe> = {
   '5x5': {
-    size: 25,
-    freePosition: 12,
-    picks: { nature: 6, manmade: 6, animal: 4, time: 2, self: 3, color: 3 },
-  },
-  standard: {
     size: 25,
     freePosition: 12,
     picks: { nature: 6, manmade: 6, animal: 4, time: 2, self: 3, color: 3 },
@@ -64,4 +59,23 @@ export function composeBoard(mode: BoardMode, rng?: () => number): ComposeResult
   }
 
   return { cells, freePosition: recipe.freePosition }
+}
+
+export function composeBoardFromCellIds(
+  mode: BoardMode,
+  cellIds: readonly string[],
+  freePosition: number,
+): ComposeResult | null {
+  const recipe = RECIPES[mode]
+  if (cellIds.length !== recipe.size) return null
+  if (freePosition !== recipe.freePosition) return null
+
+  const cells: CellMaster[] = []
+  for (const id of cellIds) {
+    const cell = getCellById(id)
+    if (!cell) return null
+    cells.push(cell)
+  }
+
+  return { cells, freePosition }
 }

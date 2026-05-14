@@ -14,8 +14,6 @@
   - `/tmp/sappeun-pencil-category-color/Ih052.png` - Camera Modal target visual
 - Local captures:
   - `/tmp/sappeun-local-audit/home-500.png`
-  - `/tmp/sappeun-local-audit/board-standard-initial-500-after.png`
-  - `/tmp/sappeun-local-audit/board-standard-polish-500.png`
   - `/tmp/sappeun-local-audit/bingo-time-labels.png`
   - `/tmp/sappeun-local-audit/bingo-photo-time-camera-hint.png`
   - `/tmp/sappeun-local-audit/dev-ui-stable-27.png`
@@ -23,7 +21,6 @@
   - `/tmp/sappeun-local-audit/photo-flow-modal-open.png`
   - `/tmp/sappeun-local-audit/photo-flow-preview.png`
   - `/tmp/sappeun-local-audit/photo-flow-filled-cell.png`
-  - `/tmp/sappeun-local-audit/photo-flow-standard-mark.png`
   - `/tmp/sappeun-local-audit/photo-flow-permission-denied.png`
   - `/tmp/sappeun-local-audit/photo-flow-3x3-board.png`
   - `/tmp/sappeun-color-category-audit/dev-ui-category-cells.png`
@@ -76,11 +73,10 @@
 - Photo-mode success path verified on `/bingo?mode=5x5`: open cell, launch camera modal, wait for playable stream, capture, preview, use, and return to board.
 - 3x3 photo board verified at 390px viewport without cell overflow or footer overlap.
 - Permission-denied path verified by forcing `getUserMedia` to reject with `NotAllowedError`: error copy appears with `다시 시도` and `닫기`.
-- Standard mode verified on `/bingo?mode=standard`: tapping a cell marks it without opening the camera modal.
 - Keyboard accessibility verified in the camera modal: initial focus lands on close, `Shift+Tab` wraps to camera switch, `Tab` wraps back to close, and `Escape` closes.
 - Category color pass verified on `/dev/ui`, `/bingo?mode=5x5`, and `/bingo?mode=3x3`.
 - Color category camera pass verified by opening a color swatch cell and checking the swatch above `찾기`.
-- Bingo completion impact verified by completing the first row in standard mode.
+- Standard mode was removed after the dark-mode pass because it did not support the photo-first product direction.
 - Abstract target captions verified in Pencil and frontend: color cells show `색 찾기`, numeric cells show `숫자 찾기`, and letter cells show `글자 찾기`.
 - Self mission wording verified in Pencil data sync: `내가 고른 색` is now `옷 색 셀카`.
 - Phase 1 mission-understanding pass verified that every non-FREE cell now has a camera `hint`.
