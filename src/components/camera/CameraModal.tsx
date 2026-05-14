@@ -167,9 +167,9 @@ export function CameraModal({
       role="dialog"
       aria-modal="true"
       aria-label={`${label} 촬영`}
-      className="fixed inset-0 z-50 bg-camera-shell"
+      className="fixed inset-0 z-50 bg-camera-shell md:flex md:items-center md:justify-center md:bg-overlay-scrim md:p-6"
     >
-      <div className="mx-auto flex h-full w-full max-w-[390px] flex-col overflow-hidden bg-camera-shell text-camera-foreground">
+      <div className="mx-auto flex h-full w-full max-w-[430px] flex-col overflow-hidden bg-camera-shell text-camera-foreground md:h-[min(100dvh-48px,900px)] md:max-w-[640px] md:rounded-lg">
         <header className="flex items-center justify-between gap-3 px-4 py-3">
           <IconButton
             ref={closeBtnRef}
@@ -202,116 +202,118 @@ export function CameraModal({
           />
         </header>
 
-        <section className="relative aspect-square w-full bg-camera-surface">
-          {error ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
-              <Package
-                size={72}
-                strokeWidth={1.8}
-                className="text-camera-icon-muted"
-                aria-hidden
+        <div className="flex min-h-0 flex-1 flex-col">
+          <section className="relative aspect-square w-full shrink-0 bg-camera-surface md:mx-auto md:max-h-[min(58dvh,500px)] md:max-w-[min(100%,500px)]">
+            {error ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
+                <Package
+                  size={72}
+                  strokeWidth={1.8}
+                  className="text-camera-icon-muted"
+                  aria-hidden
+                />
+                <p className="text-[length:var(--text-body-1)] font-semibold text-camera-foreground">
+                  카메라를 열 수 없어요
+                </p>
+                <p className="text-[length:var(--text-body-2)] leading-normal text-camera-muted">
+                  {ERROR_MESSAGE[error]}
+                </p>
+              </div>
+            ) : (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                onCanPlay={() => setVideoReady(true)}
+                className="absolute inset-0 h-full w-full object-cover"
+                style={previewUrl ? { display: 'none' } : undefined}
               />
-              <p className="text-[length:var(--text-body-1)] font-semibold text-camera-foreground">
-                카메라를 열 수 없어요
-              </p>
-              <p className="text-[length:var(--text-body-2)] leading-normal text-camera-muted">
-                {ERROR_MESSAGE[error]}
-              </p>
-            </div>
-          ) : (
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              onCanPlay={() => setVideoReady(true)}
-              className="absolute inset-0 h-full w-full object-cover"
-              style={previewUrl ? { display: 'none' } : undefined}
-            />
-          )}
+            )}
 
-          {showHint && !error && (
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4 text-center">
-              <Package
-                size={96}
-                strokeWidth={1.6}
-                className="text-camera-icon-muted"
-                aria-hidden
+            {showHint && !error && (
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4 text-center">
+                <Package
+                  size={96}
+                  strokeWidth={1.6}
+                  className="text-camera-icon-muted"
+                  aria-hidden
+                />
+                <p className="text-[length:var(--text-body-2)] leading-normal text-camera-muted">
+                  {withObjectParticle(label)} 화면에 맞춰주세요
+                </p>
+              </div>
+            )}
+
+            {previewUrl && (
+              <CapturePreview
+                url={previewUrl}
+                onUse={handleUse}
+                onRetake={handleRetake}
               />
-              <p className="text-[length:var(--text-body-2)] leading-normal text-camera-muted">
-                {withObjectParticle(label)} 화면에 맞춰주세요
+            )}
+          </section>
+
+          {!previewUrl && !error && (
+            <>
+              <p className="px-8 pb-4 pt-5 text-center text-[13px] leading-normal text-camera-muted">
+                {hint ?? '사물을 화면 중앙에 두고 셔터를 눌러주세요'}
               </p>
-            </div>
+              <div className="flex items-center justify-between px-10 pb-6 pt-1">
+                <button
+                  type="button"
+                  disabled
+                  aria-label="갤러리에서 선택"
+                  className="flex h-12 w-12 items-center justify-center rounded-md bg-camera-control text-camera-foreground disabled:opacity-70"
+                >
+                  <ImageIcon size={24} aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCapture}
+                  disabled={!canCapture}
+                  aria-label="촬영"
+                  className={cn(
+                    'flex h-20 w-20 items-center justify-center rounded-pill border-4 border-camera-foreground transition-opacity',
+                    !canCapture && 'opacity-50',
+                  )}
+                >
+                  <span className="h-[60px] w-[60px] rounded-pill bg-camera-foreground" />
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  aria-label="플래시"
+                  className="flex h-12 w-12 items-center justify-center text-camera-foreground disabled:opacity-70"
+                >
+                  <ZapOff size={24} aria-hidden />
+                </button>
+              </div>
+              <div className="flex h-6 items-center justify-center">
+                <span className="h-[5px] w-[134px] rounded-[3px] bg-camera-foreground" />
+              </div>
+            </>
           )}
 
-          {previewUrl && (
-            <CapturePreview
-              url={previewUrl}
-              onUse={handleUse}
-              onRetake={handleRetake}
-            />
+          {error && (
+            <div className="mt-auto flex flex-col gap-3 px-8 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-6">
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="min-h-12 rounded-pill border border-camera-foreground/20 px-6 font-semibold text-camera-foreground"
+              >
+                다시 시도
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="min-h-12 rounded-pill bg-camera-foreground px-6 font-semibold text-camera-button-text"
+              >
+                닫기
+              </button>
+            </div>
           )}
-        </section>
-
-        {!previewUrl && !error && (
-          <>
-            <p className="px-8 pb-4 pt-5 text-center text-[13px] leading-normal text-camera-muted">
-              {hint ?? '사물을 화면 중앙에 두고 셔터를 눌러주세요'}
-            </p>
-            <div className="flex items-center justify-between px-10 pb-6 pt-1">
-              <button
-                type="button"
-                disabled
-                aria-label="갤러리에서 선택"
-                className="flex h-12 w-12 items-center justify-center rounded-md bg-camera-control text-camera-foreground disabled:opacity-70"
-              >
-                <ImageIcon size={24} aria-hidden />
-              </button>
-              <button
-                type="button"
-                onClick={handleCapture}
-                disabled={!canCapture}
-                aria-label="촬영"
-                className={cn(
-                  'flex h-20 w-20 items-center justify-center rounded-pill border-4 border-camera-foreground transition-opacity',
-                  !canCapture && 'opacity-50',
-                )}
-              >
-                <span className="h-[60px] w-[60px] rounded-pill bg-camera-foreground" />
-              </button>
-              <button
-                type="button"
-                disabled
-                aria-label="플래시"
-                className="flex h-12 w-12 items-center justify-center text-camera-foreground disabled:opacity-70"
-              >
-                <ZapOff size={24} aria-hidden />
-              </button>
-            </div>
-            <div className="flex h-6 items-center justify-center">
-              <span className="h-[5px] w-[134px] rounded-[3px] bg-camera-foreground" />
-            </div>
-          </>
-        )}
-
-        {error && (
-          <div className="mt-auto flex flex-col gap-3 px-8 pb-10 pt-6">
-            <button
-              type="button"
-              onClick={handleRetry}
-              className="min-h-12 rounded-pill border border-camera-foreground/20 px-6 font-semibold text-camera-foreground"
-            >
-              다시 시도
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="min-h-12 rounded-pill bg-camera-foreground px-6 font-semibold text-camera-button-text"
-            >
-              닫기
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )

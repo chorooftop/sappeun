@@ -4,6 +4,7 @@ import { Flag, Shuffle, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CameraModal } from '@/components/camera/CameraModal'
+import { AppShell } from '@/components/layout/AppShell'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import type { FacingMode } from '@/components/camera/useCameraStream'
 import { checkBingoLines } from '@/lib/bingo/checkBingoLines'
@@ -296,7 +297,7 @@ export function BingoBoard({
 
   if (!sessionChecked) {
     return (
-      <main className="relative mx-auto flex min-h-dvh w-full max-w-[390px] flex-1 flex-col bg-canvas text-ink-900">
+      <AppShell maxWidth="board" panelClassName="relative bg-canvas">
         <header className="flex items-center justify-between gap-3 bg-paper px-4 py-3">
           <button
             type="button"
@@ -320,12 +321,12 @@ export function BingoBoard({
         <div className="flex flex-1 items-center justify-center px-4 text-sm font-semibold text-ink-500">
           진행 중인 산책을 불러오는 중
         </div>
-      </main>
+      </AppShell>
     )
   }
 
   return (
-    <main className="relative mx-auto flex min-h-dvh w-full max-w-[390px] flex-1 flex-col bg-canvas text-ink-900">
+    <AppShell maxWidth="board" panelClassName="relative bg-canvas">
       <header className="flex items-center justify-between gap-3 bg-paper px-4 py-3">
         <button
           type="button"
@@ -368,7 +369,7 @@ export function BingoBoard({
 
       <div
         className={cn(
-          'grid w-full gap-1.5 px-4 py-4',
+          'mx-auto grid w-full max-w-[430px] gap-1.5 px-3 py-4 min-[390px]:px-4 md:max-w-[520px] md:gap-2 md:px-5',
           side === 5 ? 'grid-cols-5' : 'grid-cols-3',
         )}
       >
@@ -426,6 +427,6 @@ export function BingoBoard({
           onClose={() => setCameraFor(null)}
         />
       )}
-    </main>
+    </AppShell>
   )
 }

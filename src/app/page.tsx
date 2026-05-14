@@ -14,6 +14,7 @@ import type { LucideIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { HomeHero } from '@/components/home/HomeHero'
+import { AppShell } from '@/components/layout/AppShell'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { Badge, Button, IconButton, TextField } from '@/components/ui'
 import {
@@ -81,7 +82,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-1 flex-col bg-canvas pb-28 text-ink-900">
+    <AppShell maxWidth="tablet" panelClassName="bg-canvas pb-28 md:pb-0">
       <header className="flex h-12 shrink-0 items-center justify-between bg-paper px-4">
         <IconButton icon={Menu} variant="ghost" aria-label="메뉴" />
         <p className="font-display text-[22px] font-bold leading-tight text-brand-primary">
@@ -90,54 +91,63 @@ export default function Home() {
         <ThemeToggle compact />
       </header>
 
-      <div className="flex flex-1 flex-col gap-5 px-4 pb-4 pt-5">
-        <HomeHero />
+      <div className="grid flex-1 gap-5 px-4 pb-4 pt-5 md:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] md:items-start md:gap-6 md:pb-6">
+        <div className="flex flex-col gap-5">
+          <HomeHero />
+          <div className="hidden md:block">
+            <SafetyList />
+          </div>
+        </div>
 
-        {activeSession && (
-          <ContinueWalkPanel
-            session={activeSession}
-            onContinue={handleContinue}
-            onClear={handleClearSession}
+        <div className="flex flex-col gap-5">
+          {activeSession && (
+            <ContinueWalkPanel
+              session={activeSession}
+              onContinue={handleContinue}
+              onClear={handleClearSession}
+            />
+          )}
+
+          <TextField
+            id="nickname"
+            label="닉네임"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            maxLength={MAX_NICKNAME_LENGTH}
+            showCounter
+            hint="한글·영문·이모지 1개 가능"
+            placeholder="예) 산책요정 주연"
+            autoComplete="off"
           />
-        )}
 
-        <TextField
-          id="nickname"
-          label="닉네임"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          maxLength={MAX_NICKNAME_LENGTH}
-          showCounter
-          hint="한글·영문·이모지 1개 가능"
-          placeholder="예) 산책요정 주연"
-          autoComplete="off"
-        />
+          <section className="flex flex-col gap-3" aria-label="모드 선택">
+            <PhotoModeCard
+              selected={mode === '5x5' || mode === '3x3'}
+              size={mode === '3x3' ? '3x3' : '5x5'}
+              onSelect={() => setMode(mode === '3x3' ? '3x3' : '5x5')}
+              onSizeChange={setMode}
+            />
+            <ModeCard
+              icon={Printer}
+              title="인쇄 모드"
+              description="종이 빙고로 출력하기"
+              tone="print"
+              disabled
+            />
+          </section>
 
-        <section className="flex flex-col gap-3" aria-label="모드 선택">
-          <PhotoModeCard
-            selected={mode === '5x5' || mode === '3x3'}
-            size={mode === '3x3' ? '3x3' : '5x5'}
-            onSelect={() => setMode(mode === '3x3' ? '3x3' : '5x5')}
-            onSizeChange={setMode}
-          />
-          <ModeCard
-            icon={Printer}
-            title="인쇄 모드"
-            description="종이 빙고로 출력하기"
-            tone="print"
-            disabled
-          />
-        </section>
-
-        <SafetyList />
+          <div className="md:hidden">
+            <SafetyList />
+          </div>
+        </div>
       </div>
 
-      <footer className="fixed bottom-0 left-1/2 z-20 w-full max-w-[390px] -translate-x-1/2 border-t border-ink-100 bg-paper px-4 pb-8 pt-4">
+      <footer className="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-t border-ink-100 bg-paper px-4 pb-8 pt-4 md:static md:ml-auto md:mr-4 md:w-[380px] md:max-w-none md:translate-x-0 md:border-t-0 md:bg-transparent md:px-0 md:pb-6 md:pt-0">
         <Button fullWidth size="lg" disabled={!canStart} onClick={handleStart}>
           {activeSession ? '새 산책 시작하기' : '산책 시작하기'}
         </Button>
       </footer>
-    </main>
+    </AppShell>
   )
 }
 
