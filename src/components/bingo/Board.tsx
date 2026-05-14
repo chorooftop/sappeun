@@ -206,7 +206,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
 
       <div
         className={cn(
-          'grid w-full gap-2',
+          'grid w-full gap-1.5',
           side === 5 ? 'grid-cols-5' : 'grid-cols-3',
         )}
       >

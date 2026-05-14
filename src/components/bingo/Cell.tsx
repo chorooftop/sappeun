@@ -2,13 +2,12 @@
 
 import { Check, X } from 'lucide-react'
 import type { MouseEvent } from 'react'
-import { CATEGORY_STYLE } from '@/design/categories'
 import { DynamicIcon } from '@/lib/icons/dynamic-icon'
 import { cn } from '@/lib/utils/cn'
 import type { CellMaster } from '@/types/cell'
 
 const BINGO_GLOW_CLASS =
-  'ring-2 ring-brand-secondary shadow-[0_0_0_4px_var(--color-brand-secondary-soft),0_0_18px_rgba(255,200,87,0.7)]'
+  'shadow-[0_0_14px_1px_#FFC857]'
 
 interface CellProps {
   cell: CellMaster
@@ -29,8 +28,6 @@ export function Cell({
   onToggle,
   onRemovePhoto,
 }: CellProps) {
-  const style = CATEGORY_STYLE[cell.category]
-
   if (photoUrl) {
     function handleRemoveClick(e: MouseEvent<HTMLButtonElement>) {
       e.stopPropagation()
@@ -144,9 +141,9 @@ export function Cell({
             cell.icon && (
               <DynamicIcon
                 name={cell.icon}
-                size={28}
+                size={30}
                 strokeWidth={1.8}
-                className={style.iconClass}
+                className="text-ink-700"
                 aria-hidden
               />
             )
