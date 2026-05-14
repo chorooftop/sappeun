@@ -25,6 +25,23 @@ const NATURE_ILLUST_PREVIEW: ReadonlyArray<{
   { label: '무지개', name: 'rainbow', pencilNode: 'rR3JN' },
 ]
 
+const MANMADE_ILLUST_PREVIEW: ReadonlyArray<{
+  label: string
+  name: IllustKey
+  pencilNode: string
+}> = [
+  { label: '자판기', name: 'vendingMachine', pencilNode: 'XjVpp' },
+  { label: '표지판', name: 'signpost', pencilNode: 'YUZPf' },
+  { label: '공중전화', name: 'publicPhone', pencilNode: 'BMaHR' },
+  { label: '우체통', name: 'mailbox', pencilNode: 'SiUOu' },
+  { label: '가로등', name: 'streetLamp', pencilNode: 'Pj5AU' },
+  { label: '자전거', name: 'bicycle', pencilNode: '5k84g' },
+  { label: '우산', name: 'umbrella', pencilNode: 'Z6pd9' },
+  { label: '의자', name: 'chair', pencilNode: '0fzlN' },
+  { label: '벽화', name: 'mural', pencilNode: 'OHKjM' },
+  { label: '횡단보도', name: 'crosswalk', pencilNode: 'QTTTc' },
+]
+
 export default function DevUiPage() {
   if (process.env.NODE_ENV === 'production') notFound()
 
@@ -153,13 +170,24 @@ export default function DevUiPage() {
 
         <section className="rounded-lg bg-paper px-8 py-6">
           <h2 className="text-heading-1 font-bold leading-tight">
-            Illustration Gate · Nature 8
+            Illustration Gate · Nature 8 / Manmade 10
           </h2>
           <p className="mt-2 text-body-2 leading-normal text-ink-500">
-            Slice 7 stable nature set from `new.pen`: 8 sticker-flat SVGs.
+            Slice 7 stable sets from `new.pen`: 18 sticker-flat SVGs.
           </p>
-          <div className="mt-4 flex flex-wrap items-center gap-4">
+          <h3 className="mt-5 text-title font-bold leading-tight text-brand-primary">
+            자연·식물
+          </h3>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
             {NATURE_ILLUST_PREVIEW.map((item) => (
+              <PreviewIllust key={item.name} {...item} />
+            ))}
+          </div>
+          <h3 className="mt-6 text-title font-bold leading-tight text-warning">
+            인공물
+          </h3>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            {MANMADE_ILLUST_PREVIEW.map((item) => (
               <PreviewIllust key={item.name} {...item} />
             ))}
           </div>
