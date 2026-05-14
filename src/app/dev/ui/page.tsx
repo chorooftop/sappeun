@@ -8,6 +8,7 @@ import {
   Tag,
   TextField,
 } from '@/components/ui'
+import { Illust } from '@/components/illust'
 
 export default function DevUiPage() {
   if (process.env.NODE_ENV === 'production') notFound()
@@ -134,7 +135,37 @@ export default function DevUiPage() {
             </div>
           </div>
         </section>
+
+        <section className="rounded-lg bg-paper px-8 py-6">
+          <h2 className="text-heading-1 font-bold leading-tight">
+            Illustration Gate · Pencil SVG samples
+          </h2>
+          <p className="mt-2 text-body-2 leading-normal text-ink-500">
+            Slice 7 day-1 samples from `new.pen`: 43jQ0, rR3JN, XjVpp.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-5">
+            <PreviewIllust label="나뭇잎" name="natureLeaf" />
+            <PreviewIllust label="무지개" name="rainbow" />
+            <PreviewIllust label="자판기" name="vendingMachine" />
+          </div>
+        </section>
       </div>
     </main>
+  )
+}
+
+interface PreviewIllustProps {
+  label: string
+  name: 'natureLeaf' | 'rainbow' | 'vendingMachine'
+}
+
+function PreviewIllust({ label, name }: PreviewIllustProps) {
+  return (
+    <figure className="flex w-32 flex-col items-center gap-2 rounded-md border border-ink-100 bg-canvas p-3">
+      <Illust name={name} title={label} size={96} />
+      <figcaption className="text-caption font-semibold leading-normal text-ink-700">
+        {label}
+      </figcaption>
+    </figure>
   )
 }
