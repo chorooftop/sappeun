@@ -7,9 +7,13 @@ import { DynamicIcon } from '@/lib/icons/dynamic-icon'
 import { cn } from '@/lib/utils/cn'
 import type { CellMaster } from '@/types/cell'
 
+const BINGO_GLOW_CLASS =
+  'ring-2 ring-brand-secondary shadow-[0_0_0_4px_var(--color-brand-secondary-soft),0_0_18px_rgba(255,200,87,0.7)]'
+
 interface CellProps {
   cell: CellMaster
   marked: boolean
+  inBingoLine?: boolean
   isFree: boolean
   photoUrl?: string
   onToggle: () => void
@@ -19,6 +23,7 @@ interface CellProps {
 export function Cell({
   cell,
   marked,
+  inBingoLine = false,
   isFree,
   photoUrl,
   onToggle,
@@ -39,10 +44,11 @@ export function Cell({
           aria-pressed={marked}
           aria-label={`${cell.label} (촬영됨, 다시 찍기)`}
           className={cn(
-            'absolute inset-0 overflow-hidden rounded-cell border-2',
+            'absolute inset-0 overflow-hidden rounded-cell border-2 transition-all',
             marked
               ? 'border-brand-primary shadow-cell-glow'
               : 'border-transparent',
+            inBingoLine && BINGO_GLOW_CLASS,
           )}
         >
           <span
@@ -83,10 +89,11 @@ export function Cell({
         aria-pressed={marked}
         aria-label={marked ? '중앙 자유 칸 (완료)' : '중앙 자유 칸 (여기서 시작)'}
         className={cn(
-          'relative flex aspect-square flex-col items-center justify-center rounded-cell px-1 py-1 text-center transition-colors',
+          'relative flex aspect-square flex-col items-center justify-center rounded-cell px-1 py-1 text-center transition-all',
           marked
             ? 'bg-brand-accent text-paper shadow-cell-glow'
             : 'border-2 border-brand-accent bg-brand-accent-soft text-brand-accent',
+          inBingoLine && BINGO_GLOW_CLASS,
         )}
       >
         <span
@@ -107,10 +114,11 @@ export function Cell({
       onClick={onToggle}
       aria-pressed={marked}
       className={cn(
-        'relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-cell border-[1.5px] px-1 py-1 text-center transition-colors',
+        'relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-cell border-[1.5px] px-1 py-1 text-center transition-all',
         marked
           ? 'border-brand-primary bg-brand-primary text-paper shadow-cell-glow'
           : 'border-ink-300 bg-paper text-ink-700',
+        inBingoLine && BINGO_GLOW_CLASS,
       )}
     >
       {cell.textOnly ? (

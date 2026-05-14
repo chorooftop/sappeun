@@ -23,6 +23,31 @@ interface PhotoEntry {
   url: string
 }
 
+function collectBingoLinePositions(
+  lines: ReturnType<typeof checkBingoLines>,
+  side: number,
+): ReadonlySet<number> {
+  const positions = new Set<number>()
+
+  for (const row of lines.rows) {
+    for (let col = 0; col < side; col++) positions.add(row * side + col)
+  }
+
+  for (const col of lines.cols) {
+    for (let row = 0; row < side; row++) positions.add(row * side + col)
+  }
+
+  if (lines.diagonals.includes(0)) {
+    for (let i = 0; i < side; i++) positions.add(i * side + i)
+  }
+
+  if (lines.diagonals.includes(1)) {
+    for (let i = 0; i < side; i++) positions.add(i * side + (side - 1 - i))
+  }
+
+  return positions
+}
+
 export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) {
   const router = useRouter()
   const size = cells.length
@@ -48,6 +73,10 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
   }, [])
 
   const lines = useMemo(() => checkBingoLines(marked, size), [marked, size])
+  const bingoLinePositions = useMemo(
+    () => collectBingoLinePositions(lines, side),
+    [lines, side],
+  )
 
   const todayLabel = useMemo(() => {
     const d = new Date()
@@ -186,6 +215,7 @@ export function BingoBoard({ mode, nickname, cells, freePosition }: BoardProps) 
             key={`${cell.id}-${i}`}
             cell={cell}
             marked={marked.has(i)}
+            inBingoLine={bingoLinePositions.has(i)}
             isFree={i === freePosition}
             photoUrl={photos.get(i)?.url}
             onToggle={() => handleCellTap(i)}
