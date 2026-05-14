@@ -44,11 +44,13 @@ export function CameraModal({
   onCapture,
   onClose,
 }: CameraModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const [currentFacingMode, setCurrentFacingMode] =
     useState<FacingMode>(facingMode)
-  const { stream, error } = useCameraStream(currentFacingMode)
+  const [retryToken, setRetryToken] = useState(0)
+  const { stream, error } = useCameraStream(currentFacingMode, retryToken)
   const [videoReady, setVideoReady] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null)
@@ -65,7 +67,32 @@ export function CameraModal({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab') return
+
+      const dialog = dialogRef.current
+      if (!dialog) return
+
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute('disabled'))
+
+      if (focusable.length === 0) return
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
@@ -111,6 +138,13 @@ export function CameraModal({
     setPreviewUrl(null)
   }
 
+  function handleRetry() {
+    setPreviewBlob(null)
+    setPreviewUrl(null)
+    setVideoReady(false)
+    setRetryToken((value) => value + 1)
+  }
+
   function handleSwitchCamera() {
     setCurrentFacingMode((prev) =>
       prev === 'environment' ? 'user' : 'environment',
@@ -121,9 +155,11 @@ export function CameraModal({
   }
 
   const showHint = !previewUrl && (!stream || !videoReady)
+  const canCapture = Boolean(stream && videoReady)
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={`${label} 촬영`}
@@ -229,11 +265,11 @@ export function CameraModal({
               <button
                 type="button"
                 onClick={handleCapture}
-                disabled={!stream}
+                disabled={!canCapture}
                 aria-label="촬영"
                 className={cn(
                   'flex h-20 w-20 items-center justify-center rounded-pill border-4 border-paper transition-opacity',
-                  !stream && 'opacity-50',
+                  !canCapture && 'opacity-50',
                 )}
               >
                 <span className="h-[60px] w-[60px] rounded-pill bg-paper" />
@@ -255,6 +291,13 @@ export function CameraModal({
 
         {error && (
           <div className="mt-auto flex flex-col gap-3 px-8 pb-10 pt-6">
+            <button
+              type="button"
+              onClick={handleRetry}
+              className="min-h-12 rounded-pill border border-paper/20 px-6 font-semibold text-paper"
+            >
+              다시 시도
+            </button>
             <button
               type="button"
               onClick={onClose}

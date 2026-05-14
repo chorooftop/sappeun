@@ -17,6 +17,13 @@
   - `/tmp/sappeun-local-audit/bingo-time-labels.png`
   - `/tmp/sappeun-local-audit/bingo-photo-time-camera-hint.png`
   - `/tmp/sappeun-local-audit/dev-ui-stable-27.png`
+  - `/tmp/sappeun-local-audit/photo-flow-board.png`
+  - `/tmp/sappeun-local-audit/photo-flow-modal-open.png`
+  - `/tmp/sappeun-local-audit/photo-flow-preview.png`
+  - `/tmp/sappeun-local-audit/photo-flow-filled-cell.png`
+  - `/tmp/sappeun-local-audit/photo-flow-standard-mark.png`
+  - `/tmp/sappeun-local-audit/photo-flow-permission-denied.png`
+  - `/tmp/sappeun-local-audit/photo-flow-3x3-board.png`
 
 ## Changes Applied
 
@@ -30,6 +37,16 @@
 | Board bands | S2 Header, Progress, and BottomBar are white full-width bands. | Split Board into white header/progress/footer bands with the grid on canvas. |
 | Bottom CTA | S2 primary end CTA uses stronger 16px label weight inside a white bottom bar. | Updated end CTA text to `text-base` and moved footer spacing to the band. |
 | Text-only targets | `숫자 7`, `숫자 5`, and `T자 표지` are ambiguous if the board only shows `7`, `5`, `T`. | Added `caption`, `captureLabel`, and `hint` metadata so board cells show `숫자`/`글자`, and camera mode explains where to find the target. |
+| Camera modal reliability | S5 assumes a full-screen capture surface with clear recovery paths. | Added capture gating until video is playable, retry for camera errors, and keyboard focus wrapping inside the modal. |
+
+## Validation Notes
+
+- Photo-mode success path verified on `/bingo?mode=5x5`: open cell, launch camera modal, wait for playable stream, capture, preview, use, and return to board.
+- 3x3 photo board verified at 390px viewport without cell overflow or footer overlap.
+- Permission-denied path verified by forcing `getUserMedia` to reject with `NotAllowedError`: error copy appears with `다시 시도` and `닫기`.
+- Standard mode verified on `/bingo?mode=standard`: tapping a cell marks it without opening the camera modal.
+- Keyboard accessibility verified in the camera modal: initial focus lands on close, `Shift+Tab` wraps to camera switch, `Tab` wraps back to close, and `Escape` closes.
+- `gstack-browse` is still not initialized in this workspace, so this pass used local Chrome headless/Playwright against `localhost:3000`.
 
 ## Visual Decisions
 
@@ -52,4 +69,4 @@
 - Preserve text-only target guidance in future board redesigns: visible board caption (`숫자`/`글자`), accessible capture label (`숫자 7`, `숫자 5`, `T 글자`), and camera hint examples (`간판`, `주소`, `버스 번호`, `가격표`, `로고`, `티셔츠`).
 - When implementing future board states, avoid reintroducing category-colored idle icons unless Pencil adds that variant.
 - Re-run visual capture after the next frontend slice with gstack browse once its one-time setup is complete; current captures used Pencil export, Chrome headless, and direct Chrome interaction.
-- NoPhoto remains blocked until the `sheet.json` self-mission entries are reconciled with the Pencil NoPhoto board source of truth.
+- NoPhoto is product-defined by explicit `noPhoto: true` only. `camera: "front"` remains a front-facing camera hint, not a NoPhoto marker.

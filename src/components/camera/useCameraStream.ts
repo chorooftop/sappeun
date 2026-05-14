@@ -15,6 +15,10 @@ interface UseCameraStreamResult {
   error: CameraError | null
 }
 
+interface CameraStreamState extends UseCameraStreamResult {
+  requestKey: string
+}
+
 function classifyError(err: unknown): CameraError {
   if (typeof err !== 'object' || err === null) return 'unknown'
   const name = (err as { name?: string }).name
@@ -32,10 +36,17 @@ function isSupported(): boolean {
   )
 }
 
-export function useCameraStream(facingMode: FacingMode): UseCameraStreamResult {
+export function useCameraStream(
+  facingMode: FacingMode,
+  retryToken = 0,
+): UseCameraStreamResult {
   const [supported] = useState<boolean>(isSupported)
-  const [stream, setStream] = useState<MediaStream | null>(null)
-  const [error, setError] = useState<CameraError | null>(null)
+  const [state, setState] = useState<CameraStreamState>({
+    requestKey: '',
+    stream: null,
+    error: null,
+  })
+  const requestKey = `${facingMode}:${retryToken}`
 
   useEffect(() => {
     if (!supported) return
@@ -57,11 +68,12 @@ export function useCameraStream(facingMode: FacingMode): UseCameraStreamResult {
           return
         }
         activeStream = s
-        setStream(s)
-        setError(null)
+        setState({ requestKey, stream: s, error: null })
       })
       .catch((e: unknown) => {
-        if (!cancelled) setError(classifyError(e))
+        if (!cancelled) {
+          setState({ requestKey, stream: null, error: classifyError(e) })
+        }
       })
 
     return () => {
@@ -70,10 +82,13 @@ export function useCameraStream(facingMode: FacingMode): UseCameraStreamResult {
         activeStream.getTracks().forEach((t) => t.stop())
       }
     }
-  }, [supported, facingMode])
+  }, [supported, facingMode, requestKey])
 
   if (!supported) {
     return { stream: null, error: 'insecure-context' }
   }
-  return { stream, error }
+  if (state.requestKey !== requestKey) {
+    return { stream: null, error: null }
+  }
+  return { stream: state.stream, error: state.error }
 }
