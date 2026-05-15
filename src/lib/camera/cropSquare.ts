@@ -1,7 +1,12 @@
+interface CropSquareOptions {
+  softwareZoom?: number
+}
+
 export async function cropSquareFromVideo(
   video: HTMLVideoElement,
   targetSize: number,
   quality: number,
+  options: CropSquareOptions = {},
 ): Promise<Blob> {
   const { videoWidth, videoHeight } = video
   if (!videoWidth || !videoHeight) {
@@ -9,9 +14,12 @@ export async function cropSquareFromVideo(
   }
 
   const min = Math.min(videoWidth, videoHeight)
-  const sx = (videoWidth - min) / 2
-  const sy = (videoHeight - min) / 2
   const outputSize = Math.min(targetSize, min)
+  const requestedZoom = Math.max(1, options.softwareZoom ?? 1)
+  const zoom = Math.min(requestedZoom, min)
+  const sourceSize = min / zoom
+  const sx = (videoWidth - sourceSize) / 2
+  const sy = (videoHeight - sourceSize) / 2
 
   const canvas = document.createElement('canvas')
   canvas.width = outputSize
@@ -22,7 +30,7 @@ export async function cropSquareFromVideo(
 
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
-  ctx.drawImage(video, sx, sy, min, min, 0, 0, outputSize, outputSize)
+  ctx.drawImage(video, sx, sy, sourceSize, sourceSize, 0, 0, outputSize, outputSize)
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(

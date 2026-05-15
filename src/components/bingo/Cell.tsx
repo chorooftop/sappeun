@@ -1,7 +1,6 @@
 'use client'
 
-import { Check, Lock, X } from 'lucide-react'
-import type { MouseEvent } from 'react'
+import { Check, Lock } from 'lucide-react'
 import { getCategoryVisual, getSwatchVisual } from '@/lib/bingo/cellVisual'
 import { DynamicIcon } from '@/lib/icons/dynamic-icon'
 import { cn } from '@/lib/utils/cn'
@@ -17,8 +16,9 @@ interface CellProps {
   noPhoto?: boolean
   isFree: boolean
   photoUrl?: string
+  replaceMode?: boolean
+  replaceable?: boolean
   onToggle: () => void
-  onRemovePhoto?: () => void
 }
 
 export function Cell({
@@ -29,8 +29,9 @@ export function Cell({
   noPhoto = false,
   isFree,
   photoUrl,
+  replaceMode = false,
+  replaceable = false,
   onToggle,
-  onRemovePhoto,
 }: CellProps) {
   const accessibleLabel = cell.captureLabel ?? cell.label
   const visual = getCategoryVisual(cell.category)
@@ -42,17 +43,18 @@ export function Cell({
   )
 
   if (photoUrl) {
-    function handleRemoveClick(e: MouseEvent<HTMLButtonElement>) {
-      e.stopPropagation()
-      onRemovePhoto?.()
-    }
     return (
-      <div className="relative aspect-square min-w-0">
+      <div
+        className={cn(
+          'relative aspect-square min-w-0',
+          replaceMode && 'opacity-55',
+        )}
+      >
         <button
           type="button"
           onClick={onToggle}
           aria-pressed={marked}
-          aria-label={`${accessibleLabel} (촬영됨, 다시 찍기)`}
+          aria-label={`${accessibleLabel} (촬영됨, 사진 보기)`}
           className={cn(
             'absolute inset-0 overflow-hidden rounded-cell border-2 transition-all',
             marked
@@ -77,16 +79,6 @@ export function Cell({
             </span>
           )}
         </button>
-        {onRemovePhoto && (
-          <button
-            type="button"
-            onClick={handleRemoveClick}
-            aria-label={`${accessibleLabel} 사진 삭제`}
-            className="absolute left-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-pill bg-ink-900/70 text-paper hover:bg-ink-900"
-          >
-            <X size={12} strokeWidth={3} aria-hidden />
-          </button>
-        )}
       </div>
     )
   }
@@ -104,6 +96,7 @@ export function Cell({
             ? 'bg-brand-accent text-paper shadow-cell-glow'
             : 'border-2 border-brand-accent bg-brand-accent-soft text-brand-accent',
           inBingoLine && BINGO_GLOW_CLASS,
+          replaceMode && 'opacity-55',
         )}
       >
         <span
@@ -134,6 +127,10 @@ export function Cell({
             ? 'border-ink-300 bg-ink-50 text-ink-500'
             : visual.cellClassName,
         inBingoLine && BINGO_GLOW_CLASS,
+        replaceMode &&
+          (replaceable
+            ? 'ring-2 ring-brand-primary ring-offset-2 ring-offset-canvas'
+            : 'opacity-55'),
       )}
     >
       {cell.textOnly ? (

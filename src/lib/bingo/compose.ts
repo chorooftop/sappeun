@@ -1,4 +1,4 @@
-import { CELLS_BY_CATEGORY, FREE_CELL, getCellById } from '@/data/sheet'
+import { ALL_CELLS, CELLS_BY_CATEGORY, FREE_CELL, getCellById } from '@/data/sheet'
 import type { CellMaster } from '@/types/cell'
 import type { BoardMode } from '@/types/bingo'
 import { pickRandom, shuffle } from './shuffle'
@@ -78,4 +78,58 @@ export function composeBoardFromCellIds(
   }
 
   return { cells, freePosition }
+}
+
+function isReplaceCandidate(
+  cell: CellMaster,
+  currentIds: ReadonlySet<string>,
+  targetCell: CellMaster,
+): boolean {
+  return (
+    cell.id !== FREE_CELL.id &&
+    cell.id !== targetCell.id &&
+    cell.fixedPosition !== 'center' &&
+    cell.category !== 'special' &&
+    !currentIds.has(cell.id)
+  )
+}
+
+function prioritizeReplacementCandidates(
+  candidates: readonly CellMaster[],
+  targetCell: CellMaster,
+  rng: () => number,
+): CellMaster[] {
+  const shuffled = shuffle(candidates, rng)
+  if (targetCell.difficulty !== 'hard') return shuffled
+
+  const easier = shuffled.filter((cell) => cell.difficulty !== 'hard')
+  const hard = shuffled.filter((cell) => cell.difficulty === 'hard')
+  return [...easier, ...hard]
+}
+
+export function pickReplacementCell(
+  currentCells: readonly CellMaster[],
+  targetCell: CellMaster,
+  rng: () => number = Math.random,
+): CellMaster | null {
+  const currentIds = new Set(currentCells.map((cell) => cell.id))
+  const categoryCandidates = CELLS_BY_CATEGORY[targetCell.category].filter((cell) =>
+    isReplaceCandidate(cell, currentIds, targetCell),
+  )
+  const sameCategory = prioritizeReplacementCandidates(
+    categoryCandidates,
+    targetCell,
+    rng,
+  )
+  if (sameCategory[0]) return sameCategory[0]
+
+  const fallbackCandidates = ALL_CELLS.filter((cell) =>
+    isReplaceCandidate(cell, currentIds, targetCell),
+  )
+  const fallback = prioritizeReplacementCandidates(
+    fallbackCandidates,
+    targetCell,
+    rng,
+  )
+  return fallback[0] ?? null
 }

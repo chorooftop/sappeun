@@ -1,7 +1,7 @@
 'use client'
 
 import { ImageIcon, Package, RefreshCw, X, ZapOff } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { IconButton } from '@/components/ui'
 import { cropSquareFromVideo } from '@/lib/camera/cropSquare'
 import { getCategoryVisual, getSwatchVisual } from '@/lib/bingo/cellVisual'
@@ -24,6 +24,7 @@ interface CameraModalProps {
 
 const CAPTURE_TARGET_SIZE = 1024
 const CAPTURE_QUALITY = 0.92
+const ZOOM_LEVELS = [1, 1.5, 2] as const
 
 const ERROR_MESSAGE: Record<CameraError, string> = {
   'permission-denied': '카메라 권한이 거부되었어요. 브라우저 설정에서 허용해주세요.',
@@ -37,6 +38,35 @@ function withObjectParticle(value: string) {
   const lastChar = trimmed.charCodeAt(trimmed.length - 1)
   if (lastChar < 0xac00 || lastChar > 0xd7a3) return `${trimmed}를`
   return (lastChar - 0xac00) % 28 === 0 ? `${trimmed}를` : `${trimmed}을`
+}
+
+interface CameraZoomRange {
+  min: number
+  max: number
+  step?: number
+}
+
+type ZoomCapabilities = MediaTrackCapabilities & {
+  zoom?: CameraZoomRange
+}
+
+function getZoomRange(track: MediaStreamTrack | undefined): CameraZoomRange | null {
+  if (!track || typeof track.getCapabilities !== 'function') return null
+  const capabilities = track.getCapabilities() as ZoomCapabilities
+  const zoom = capabilities.zoom
+  if (
+    !zoom ||
+    typeof zoom.min !== 'number' ||
+    typeof zoom.max !== 'number' ||
+    zoom.max <= zoom.min
+  ) {
+    return null
+  }
+  return zoom
+}
+
+function clampZoom(value: number, range: CameraZoomRange): number {
+  return Math.min(Math.max(value, range.min), range.max)
 }
 
 export function CameraModal({
@@ -58,6 +88,10 @@ export function CameraModal({
   const [videoReady, setVideoReady] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null)
+  const [zoom, setZoom] = useState<(typeof ZOOM_LEVELS)[number]>(1)
+  const [nativeZoomApplied, setNativeZoomApplied] = useState(false)
+  const videoTrack = useMemo(() => stream?.getVideoTracks()[0], [stream])
+  const zoomRange = useMemo(() => getZoomRange(videoTrack), [videoTrack])
 
   useEffect(() => {
     const video = videoRef.current
@@ -68,6 +102,28 @@ export function CameraModal({
       video.srcObject = null
     }
   }, [stream])
+
+  useEffect(() => {
+    if (!videoTrack || !zoomRange) return
+
+    let cancelled = false
+    videoTrack
+      .applyConstraints({
+        advanced: [
+          { zoom: clampZoom(zoom, zoomRange) } as MediaTrackConstraintSet,
+        ],
+      })
+      .then(() => {
+        if (!cancelled) setNativeZoomApplied(true)
+      })
+      .catch(() => {
+        if (!cancelled) setNativeZoomApplied(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [videoTrack, zoom, zoomRange])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -117,10 +173,12 @@ export function CameraModal({
     const video = videoRef.current
     if (!video) return
     try {
+      const softwareZoom = zoomRange && nativeZoomApplied ? 1 : zoom
       const blob = await cropSquareFromVideo(
         video,
         CAPTURE_TARGET_SIZE,
         CAPTURE_QUALITY,
+        { softwareZoom },
       )
       if (process.env.NODE_ENV === 'development') {
         const sourceWidth = video.videoWidth
@@ -135,6 +193,9 @@ export function CameraModal({
           sourceHeight,
           outputSize,
           blobSize: blob.size,
+          softwareZoom,
+          selectedZoom: zoom,
+          nativeZoomApplied,
           trackSettings: stream?.getVideoTracks()[0]?.getSettings(),
         })
       }
@@ -163,6 +224,8 @@ export function CameraModal({
     setPreviewBlob(null)
     setPreviewUrl(null)
     setVideoReady(false)
+    setZoom(1)
+    setNativeZoomApplied(false)
     setRetryToken((value) => value + 1)
   }
 
@@ -173,10 +236,13 @@ export function CameraModal({
     setPreviewBlob(null)
     setPreviewUrl(null)
     setVideoReady(false)
+    setZoom(1)
+    setNativeZoomApplied(false)
   }
 
   const showHint = !previewUrl && (!stream || !videoReady)
   const canCapture = Boolean(stream && videoReady)
+  const softwareZoom = zoomRange && nativeZoomApplied ? 1 : zoom
 
   return (
     <div
@@ -220,7 +286,7 @@ export function CameraModal({
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col">
-          <section className="relative aspect-square w-full shrink-0 bg-camera-surface md:mx-auto md:max-h-[min(58dvh,500px)] md:max-w-[min(100%,500px)]">
+          <section className="relative aspect-square w-full shrink-0 overflow-hidden bg-camera-surface md:mx-auto md:max-h-[min(58dvh,500px)] md:max-w-[min(100%,500px)]">
             {error ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
                 <Package
@@ -243,8 +309,15 @@ export function CameraModal({
                 playsInline
                 muted
                 onCanPlay={() => setVideoReady(true)}
-                className="absolute inset-0 h-full w-full object-cover"
-                style={previewUrl ? { display: 'none' } : undefined}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-200"
+                style={
+                  previewUrl
+                    ? { display: 'none' }
+                    : {
+                        transform: `scale(${softwareZoom})`,
+                        transformOrigin: 'center',
+                      }
+                }
               />
             )}
 
@@ -276,6 +349,28 @@ export function CameraModal({
               <p className="px-8 pb-4 pt-5 text-center text-[13px] leading-normal text-camera-muted">
                 {hint ?? '사물을 화면 중앙에 두고 셔터를 눌러주세요'}
               </p>
+              <div
+                role="group"
+                aria-label="카메라 확대"
+                className="mx-auto mb-4 flex rounded-pill bg-camera-control p-1"
+              >
+                {ZOOM_LEVELS.map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setZoom(level)}
+                    aria-pressed={zoom === level}
+                    className={cn(
+                      'min-h-8 rounded-pill px-3 text-[12px] font-semibold transition-colors',
+                      zoom === level
+                        ? 'bg-camera-foreground text-camera-button-text'
+                        : 'text-camera-muted hover:bg-camera-foreground/10',
+                    )}
+                  >
+                    {level}x
+                  </button>
+                ))}
+              </div>
               <div className="flex items-center justify-between px-10 pb-6 pt-1">
                 <button
                   type="button"
