@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, Lock } from 'lucide-react'
+import { Camera, Check, Lock } from 'lucide-react'
 import { getCategoryVisual, getSwatchVisual } from '@/lib/bingo/cellVisual'
 import { DynamicIcon } from '@/lib/icons/dynamic-icon'
 import { cn } from '@/lib/utils/cn'
@@ -89,9 +89,13 @@ export function Cell({
         type="button"
         onClick={onToggle}
         aria-pressed={marked}
-        aria-label={marked ? '중앙 자유 칸 (완료)' : '중앙 자유 칸 (여기서 시작)'}
+        aria-label={
+          marked
+            ? `중앙 FREE 칸, ${accessibleLabel} 촬영됨`
+            : `중앙 FREE 칸, ${accessibleLabel} 촬영`
+        }
         className={cn(
-          'relative flex aspect-square min-w-0 flex-col items-center justify-center rounded-cell px-1 py-1 text-center transition-all',
+          'relative flex aspect-square min-w-0 flex-col items-center justify-center gap-1 rounded-cell px-1 py-1 text-center transition-all',
           marked
             ? 'bg-brand-accent text-paper shadow-cell-glow'
             : 'border-2 border-brand-accent bg-brand-accent-soft text-brand-accent',
@@ -99,13 +103,20 @@ export function Cell({
           replaceMode && 'opacity-55',
         )}
       >
-        <span
-          className={cn(
-            'font-bold leading-tight',
-            marked ? 'text-sm' : 'text-[11px]',
-          )}
-        >
-          {marked ? 'FREE' : '여기서 시작!'}
+        {marked ? (
+          <Check size={28} strokeWidth={3} aria-hidden />
+        ) : cell.icon ? (
+          <DynamicIcon
+            name={cell.icon}
+            size={dense ? 23 : 24}
+            strokeWidth={1.9}
+            aria-hidden
+          />
+        ) : (
+          <Camera size={dense ? 23 : 24} strokeWidth={1.9} aria-hidden />
+        )}
+        <span className={cn('font-bold leading-tight', dense ? 'text-[9.5px]' : 'text-[11px]')}>
+          {marked ? '촬영됨' : cell.label}
         </span>
       </button>
     )

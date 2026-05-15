@@ -85,7 +85,7 @@ export function BingoBoard({
   const isDenseBoard = side === 5
 
   const [marked, setMarked] = useState<ReadonlySet<number>>(
-    () => new Set([boardFreePosition]),
+    () => new Set(),
   )
   const [photos, setPhotos] = useState<ReadonlyMap<number, PhotoEntry>>(
     () => new Map(),
@@ -133,7 +133,6 @@ export function BingoBoard({
               filterPersistableMarkedPositions(
                 activeSession.markedPositions,
                 restored.cells,
-                restored.freePosition,
               ),
             ),
           )
@@ -175,7 +174,6 @@ export function BingoBoard({
       markedPositions: filterPersistableMarkedPositions(
         marked,
         boardCells,
-        boardFreePosition,
       ),
     }
 
@@ -246,8 +244,8 @@ export function BingoBoard({
   }
 
   function handleCellTap(position: number) {
-    if (position === boardFreePosition) return
     if (replaceMode) {
+      if (position === boardFreePosition) return
       if (replaceablePositions.has(position)) {
         setReplaceFor(position)
         setReplaceError(null)

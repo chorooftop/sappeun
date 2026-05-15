@@ -19,28 +19,24 @@ function createSessionId(): string {
 
 export function canPersistMarkedCell(
   cell: CellMaster | undefined,
-  position: number,
-  freePosition: number,
 ): boolean {
-  return position === freePosition || cell?.noPhoto === true
+  return cell?.noPhoto === true
 }
 
 export function filterPersistableMarkedPositions(
   markedPositions: Iterable<number>,
   cells: readonly CellMaster[],
-  freePosition: number,
 ): number[] {
   const unique = new Set<number>()
 
   for (const position of markedPositions) {
     if (!Number.isInteger(position)) continue
     if (position < 0 || position >= cells.length) continue
-    if (canPersistMarkedCell(cells[position], position, freePosition)) {
+    if (canPersistMarkedCell(cells[position])) {
       unique.add(position)
     }
   }
 
-  unique.add(freePosition)
   return Array.from(unique).sort((a, b) => a - b)
 }
 
@@ -49,7 +45,7 @@ export function createBoardSession({
   nickname,
   cells,
   freePosition,
-  markedPositions = [freePosition],
+  markedPositions = [],
 }: CreateBoardSessionInput): PersistedBoardSessionV1 {
   const now = new Date().toISOString()
 
@@ -65,7 +61,6 @@ export function createBoardSession({
     markedPositions: filterPersistableMarkedPositions(
       markedPositions,
       cells,
-      freePosition,
     ),
     endedAt: null,
   }
