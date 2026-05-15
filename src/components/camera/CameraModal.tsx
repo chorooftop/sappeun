@@ -25,6 +25,8 @@ interface CameraModalProps {
 const CAPTURE_TARGET_SIZE = 1024
 const CAPTURE_QUALITY = 0.92
 const ZOOM_LEVELS = [1, 1.5, 2] as const
+const MIN_ZOOM = 1
+const MAX_ZOOM = 2
 
 const ERROR_MESSAGE: Record<CameraError, string> = {
   'permission-denied': '카메라 권한이 거부되었어요. 브라우저 설정에서 허용해주세요.',
@@ -69,6 +71,22 @@ function clampZoom(value: number, range: CameraZoomRange): number {
   return Math.min(Math.max(value, range.min), range.max)
 }
 
+function clampViewfinderZoom(value: number): number {
+  return Math.min(Math.max(value, MIN_ZOOM), MAX_ZOOM)
+}
+
+function getTouchDistance(touches: TouchList): number {
+  const first = touches[0]
+  const second = touches[1]
+  if (!first || !second) return 0
+  return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY)
+}
+
+function getSoftwareZoom(selectedZoom: number, nativeZoomValue: number | null): number {
+  if (!nativeZoomValue || nativeZoomValue <= 0) return selectedZoom
+  return clampViewfinderZoom(selectedZoom / nativeZoomValue)
+}
+
 export function CameraModal({
   facingMode,
   cell,
@@ -79,8 +97,11 @@ export function CameraModal({
   const hint = cell.hint
   const visual = getCategoryVisual(cell.category)
   const dialogRef = useRef<HTMLDivElement>(null)
+  const viewfinderRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const zoomRef = useRef<number>(MIN_ZOOM)
+  const pinchRef = useRef<{ distance: number; zoom: number } | null>(null)
   const [currentFacingMode, setCurrentFacingMode] =
     useState<FacingMode>(facingMode)
   const [retryToken, setRetryToken] = useState(0)
@@ -88,10 +109,14 @@ export function CameraModal({
   const [videoReady, setVideoReady] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null)
-  const [zoom, setZoom] = useState<(typeof ZOOM_LEVELS)[number]>(1)
-  const [nativeZoomApplied, setNativeZoomApplied] = useState(false)
+  const [zoom, setZoom] = useState(MIN_ZOOM)
+  const [nativeZoomValue, setNativeZoomValue] = useState<number | null>(null)
   const videoTrack = useMemo(() => stream?.getVideoTracks()[0], [stream])
   const zoomRange = useMemo(() => getZoomRange(videoTrack), [videoTrack])
+
+  useEffect(() => {
+    zoomRef.current = zoom
+  }, [zoom])
 
   useEffect(() => {
     const video = videoRef.current
@@ -107,17 +132,16 @@ export function CameraModal({
     if (!videoTrack || !zoomRange) return
 
     let cancelled = false
+    const nextNativeZoom = clampZoom(zoom, zoomRange)
     videoTrack
       .applyConstraints({
-        advanced: [
-          { zoom: clampZoom(zoom, zoomRange) } as MediaTrackConstraintSet,
-        ],
+        advanced: [{ zoom: nextNativeZoom } as MediaTrackConstraintSet],
       })
       .then(() => {
-        if (!cancelled) setNativeZoomApplied(true)
+        if (!cancelled) setNativeZoomValue(nextNativeZoom)
       })
       .catch(() => {
-        if (!cancelled) setNativeZoomApplied(false)
+        if (!cancelled) setNativeZoomValue(null)
       })
 
     return () => {
@@ -169,11 +193,60 @@ export function CameraModal({
     }
   }, [previewUrl])
 
+  useEffect(() => {
+    const viewfinder = viewfinderRef.current
+    if (!viewfinder) return
+
+    function onTouchStart(e: TouchEvent) {
+      if (e.touches.length < 2) return
+      e.preventDefault()
+      pinchRef.current = {
+        distance: getTouchDistance(e.touches),
+        zoom: zoomRef.current,
+      }
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      if (e.touches.length < 2) return
+      e.preventDefault()
+
+      const distance = getTouchDistance(e.touches)
+      const start = pinchRef.current
+      if (!start || start.distance <= 0 || distance <= 0) {
+        pinchRef.current = { distance, zoom: zoomRef.current }
+        return
+      }
+
+      setZoom(clampViewfinderZoom(start.zoom * (distance / start.distance)))
+    }
+
+    function onTouchEnd(e: TouchEvent) {
+      if (e.touches.length < 2) {
+        pinchRef.current = null
+      }
+    }
+
+    viewfinder.addEventListener('touchstart', onTouchStart, { passive: false })
+    viewfinder.addEventListener('touchmove', onTouchMove, { passive: false })
+    viewfinder.addEventListener('touchend', onTouchEnd)
+    viewfinder.addEventListener('touchcancel', onTouchEnd)
+
+    return () => {
+      viewfinder.removeEventListener('touchstart', onTouchStart)
+      viewfinder.removeEventListener('touchmove', onTouchMove)
+      viewfinder.removeEventListener('touchend', onTouchEnd)
+      viewfinder.removeEventListener('touchcancel', onTouchEnd)
+    }
+  }, [])
+
   async function handleCapture() {
     const video = videoRef.current
     if (!video) return
     try {
-      const softwareZoom = zoomRange && nativeZoomApplied ? 1 : zoom
+      const softwareZoom = getSoftwareZoom(
+        zoom,
+        zoomRange ? nativeZoomValue : null,
+      )
       const blob = await cropSquareFromVideo(
         video,
         CAPTURE_TARGET_SIZE,
@@ -195,7 +268,7 @@ export function CameraModal({
           blobSize: blob.size,
           softwareZoom,
           selectedZoom: zoom,
-          nativeZoomApplied,
+          nativeZoomValue,
           trackSettings: stream?.getVideoTracks()[0]?.getSettings(),
         })
       }
@@ -225,7 +298,7 @@ export function CameraModal({
     setPreviewUrl(null)
     setVideoReady(false)
     setZoom(1)
-    setNativeZoomApplied(false)
+    setNativeZoomValue(null)
     setRetryToken((value) => value + 1)
   }
 
@@ -237,12 +310,15 @@ export function CameraModal({
     setPreviewUrl(null)
     setVideoReady(false)
     setZoom(1)
-    setNativeZoomApplied(false)
+    setNativeZoomValue(null)
   }
 
   const showHint = !previewUrl && (!stream || !videoReady)
   const canCapture = Boolean(stream && videoReady)
-  const softwareZoom = zoomRange && nativeZoomApplied ? 1 : zoom
+  const softwareZoom = getSoftwareZoom(
+    zoom,
+    zoomRange ? nativeZoomValue : null,
+  )
 
   return (
     <div
@@ -286,7 +362,11 @@ export function CameraModal({
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col">
-          <section className="relative aspect-square w-full shrink-0 overflow-hidden bg-camera-surface md:mx-auto md:max-h-[min(58dvh,500px)] md:max-w-[min(100%,500px)]">
+          <section
+            ref={viewfinderRef}
+            className="relative aspect-square w-full shrink-0 touch-none select-none overflow-hidden overscroll-contain bg-camera-surface md:mx-auto md:max-h-[min(58dvh,500px)] md:max-w-[min(100%,500px)]"
+            style={{ touchAction: 'none' }}
+          >
             {error ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
                 <Package
@@ -359,10 +439,10 @@ export function CameraModal({
                     key={level}
                     type="button"
                     onClick={() => setZoom(level)}
-                    aria-pressed={zoom === level}
+                    aria-pressed={Math.abs(zoom - level) < 0.05}
                     className={cn(
                       'min-h-8 rounded-pill px-3 text-[12px] font-semibold transition-colors',
-                      zoom === level
+                      Math.abs(zoom - level) < 0.05
                         ? 'bg-camera-foreground text-camera-button-text'
                         : 'text-camera-muted hover:bg-camera-foreground/10',
                     )}
