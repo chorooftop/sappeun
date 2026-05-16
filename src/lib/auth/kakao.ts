@@ -47,14 +47,16 @@ export function getKakaoAuthorizeUrl(
   const clientId = getKakaoClientId()
   if (!clientId) return null
 
-  const url = new URL(KAKAO_AUTHORIZE_URL)
-  url.searchParams.set('client_id', clientId)
-  url.searchParams.set('redirect_uri', getKakaoCallbackUrl(request))
-  url.searchParams.set('response_type', 'code')
-  url.searchParams.set('scope', KAKAO_OIDC_SCOPE)
-  url.searchParams.set('nonce', params.nonce)
-  url.searchParams.set('state', params.state)
-  return url.toString()
+  const searchParams = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: getKakaoCallbackUrl(request),
+    response_type: 'code',
+    scope: KAKAO_OIDC_SCOPE,
+    nonce: params.nonce,
+    state: params.state,
+  })
+
+  return `${KAKAO_AUTHORIZE_URL}?${searchParams.toString().replaceAll('+', '%20')}`
 }
 
 export async function exchangeKakaoCodeForToken(
