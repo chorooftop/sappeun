@@ -4,10 +4,32 @@ const MAX_DISPLAY_NAME_LENGTH = 40
 const MAX_PROVIDER_LENGTH = 64
 const UNIQUE_VIOLATION = '23505'
 
+export const TERMS_VERSION = 'terms-2026-05-16'
+export const PRIVACY_VERSION = 'privacy-2026-05-16'
+
+type ConsentType = 'terms' | 'privacy'
+type SignupSource = 'signup' | 'login_recovery'
+
 interface ProfileCandidate {
   displayName: string | null
   avatarUrl: string | null
   primaryProvider: string | null
+}
+
+interface ExistingProfileRow {
+  user_id: string
+  display_name: string | null
+  avatar_url: string | null
+  signup_completed_at: string | null
+}
+
+export interface EnsureUserProfileResult {
+  isNewProfile: boolean
+  signupCompletedAt: string | null
+}
+
+interface CompleteSignupOptions {
+  source: SignupSource
 }
 
 function normalizeText(value: unknown, maxLength: number) {
@@ -53,7 +75,7 @@ function profileCandidateFromUser(user: User): ProfileCandidate {
 export async function ensureUserProfile(
   supabase: SupabaseClient,
   user: User,
-) {
+): Promise<EnsureUserProfileResult> {
   const candidate = profileCandidateFromUser(user)
   const now = new Date().toISOString()
   const { error: insertError } = await supabase.from('profiles').insert({
@@ -65,7 +87,7 @@ export async function ensureUserProfile(
   })
 
   if (!insertError) {
-    return
+    return { isNewProfile: true, signupCompletedAt: null }
   }
 
   if (insertError.code !== UNIQUE_VIOLATION) {
@@ -74,9 +96,9 @@ export async function ensureUserProfile(
 
   const { data: existingProfile, error: selectError } = await supabase
     .from('profiles')
-    .select('user_id, display_name, avatar_url')
+    .select('user_id, display_name, avatar_url, signup_completed_at')
     .eq('user_id', user.id)
-    .maybeSingle()
+    .maybeSingle<ExistingProfileRow>()
 
   if (selectError) throw selectError
   if (!existingProfile) {
@@ -101,4 +123,60 @@ export async function ensureUserProfile(
     .eq('user_id', user.id)
 
   if (updateError) throw updateError
+
+  return {
+    isNewProfile: false,
+    signupCompletedAt: existingProfile.signup_completed_at,
+  }
+}
+
+async function insertConsentIfMissing(
+  supabase: SupabaseClient,
+  userId: string,
+  consentType: ConsentType,
+  version: string,
+  source: SignupSource,
+) {
+  const { error } = await supabase.from('user_consents').insert({
+    user_id: userId,
+    consent_type: consentType,
+    version,
+    source,
+  })
+
+  if (error && error.code !== UNIQUE_VIOLATION) {
+    throw error
+  }
+}
+
+export async function completeSignup(
+  supabase: SupabaseClient,
+  userId: string,
+  { source }: CompleteSignupOptions,
+) {
+  await insertConsentIfMissing(
+    supabase,
+    userId,
+    'terms',
+    TERMS_VERSION,
+    source,
+  )
+  await insertConsentIfMissing(
+    supabase,
+    userId,
+    'privacy',
+    PRIVACY_VERSION,
+    source,
+  )
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      signup_completed_at: new Date().toISOString(),
+      signup_source: source,
+    })
+    .eq('user_id', userId)
+    .is('signup_completed_at', null)
+
+  if (error) throw error
 }

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import { LoggedInPanel, LoginPanel } from '@/components/auth/LoginPanel'
-import { SignupRequiredPanel } from '@/components/auth/SignupPanel'
+import { LoggedInPanel } from '@/components/auth/LoginPanel'
+import { SignupPanel, SignupRequiredPanel } from '@/components/auth/SignupPanel'
 import { AppShell } from '@/components/layout/AppShell'
 import { getSafeNextPath } from '@/lib/auth/redirect'
 import {
@@ -15,7 +15,7 @@ function firstSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value
 }
 
-export default async function LoginPage({
+export default async function SignupPage({
   searchParams,
 }: {
   searchParams: SearchParams
@@ -55,7 +55,7 @@ export default async function LoginPage({
             />
           )
         ) : (
-          <LoginPanel nextPath={nextPath} error={error} />
+          <SignupPanel error={error} nextPath={nextPath} reason={reason} />
         )}
       </div>
     </AppShell>

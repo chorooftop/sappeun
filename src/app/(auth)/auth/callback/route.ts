@@ -1,47 +1,95 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
-import { ensureUserProfile } from '@/lib/auth/profile'
+import { completeSignup, ensureUserProfile } from '@/lib/auth/profile'
 import {
+  AUTH_FLOW_COOKIE_NAME,
+  AUTH_FLOW_SIGNUP_VALUE,
   AUTH_NEXT_COOKIE_NAME,
   AUTH_NEXT_COOKIE_PATH,
+  SIGNUP_INTENT_ACCEPTED_VALUE,
+  SIGNUP_INTENT_COOKIE_NAME,
   getLocalRedirectUrl,
   getLoginUrl,
   getSafeNextPath,
+  getSignupCompleteUrl,
+  getSignupUrl,
 } from '@/lib/auth/redirect'
 import { createClient } from '@/lib/supabase/server'
 
-function clearAuthNextCookie(response: NextResponse) {
-  response.cookies.set(AUTH_NEXT_COOKIE_NAME, '', {
-    maxAge: 0,
-    path: AUTH_NEXT_COOKIE_PATH,
+const AUTH_FLOW_COOKIE_NAMES = [
+  AUTH_NEXT_COOKIE_NAME,
+  AUTH_FLOW_COOKIE_NAME,
+  SIGNUP_INTENT_COOKIE_NAME,
+] as const
+
+function clearAuthFlowCookies(response: NextResponse) {
+  AUTH_FLOW_COOKIE_NAMES.forEach((name) => {
+    response.cookies.set(name, '', {
+      maxAge: 0,
+      path: AUTH_NEXT_COOKIE_PATH,
+    })
   })
   return response
 }
 
 function redirectToLogin(request: NextRequest, error: string, nextPath: string) {
-  return clearAuthNextCookie(
+  return clearAuthFlowCookies(
     NextResponse.redirect(getLoginUrl(request, { error, next: nextPath })),
   )
+}
+
+function redirectToSignup(
+  request: NextRequest,
+  params: {
+    error?: string
+    nextPath: string
+    reason?: string
+  },
+) {
+  return clearAuthFlowCookies(
+    NextResponse.redirect(
+      getSignupUrl(request, {
+        error: params.error,
+        next: params.nextPath,
+        reason: params.reason,
+      }),
+    ),
+  )
+}
+
+function redirectToAuthEntry(
+  request: NextRequest,
+  authFlow: string | undefined,
+  error: string,
+  nextPath: string,
+) {
+  if (authFlow === AUTH_FLOW_SIGNUP_VALUE) {
+    return redirectToSignup(request, { error, nextPath })
+  }
+
+  return redirectToLogin(request, error, nextPath)
 }
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const cookieStore = await cookies()
+  const authFlow = cookieStore.get(AUTH_FLOW_COOKIE_NAME)?.value
+  const signupIntent = cookieStore.get(SIGNUP_INTENT_COOKIE_NAME)?.value
   const nextPath = getSafeNextPath(
     requestUrl.searchParams.get('next') ??
       cookieStore.get(AUTH_NEXT_COOKIE_NAME)?.value,
   )
 
   if (!code) {
-    return redirectToLogin(request, 'callback_failed', nextPath)
+    return redirectToAuthEntry(request, authFlow, 'callback_failed', nextPath)
   }
 
   const supabase = await createClient()
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
   if (exchangeError) {
-    return redirectToLogin(request, 'callback_failed', nextPath)
+    return redirectToAuthEntry(request, authFlow, 'callback_failed', nextPath)
   }
 
   const {
@@ -50,17 +98,55 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
-    return redirectToLogin(request, 'callback_failed', nextPath)
+    return redirectToAuthEntry(request, authFlow, 'callback_failed', nextPath)
   }
 
+  let profileResult
   try {
-    await ensureUserProfile(supabase, user)
+    profileResult = await ensureUserProfile(supabase, user)
   } catch {
     await supabase.auth.signOut()
-    return redirectToLogin(request, 'profile_prepare_failed', nextPath)
+    return redirectToAuthEntry(
+      request,
+      authFlow,
+      'profile_prepare_failed',
+      nextPath,
+    )
   }
 
-  return clearAuthNextCookie(
+  if (authFlow === AUTH_FLOW_SIGNUP_VALUE) {
+    if (profileResult.signupCompletedAt) {
+      return clearAuthFlowCookies(
+        NextResponse.redirect(getLocalRedirectUrl(request, nextPath)),
+      )
+    }
+
+    if (signupIntent !== SIGNUP_INTENT_ACCEPTED_VALUE) {
+      return redirectToSignup(request, {
+        error: 'consent_required',
+        nextPath,
+      })
+    }
+
+    try {
+      await completeSignup(supabase, user.id, { source: 'signup' })
+    } catch {
+      return redirectToSignup(request, { error: 'signup_failed', nextPath })
+    }
+
+    return clearAuthFlowCookies(
+      NextResponse.redirect(getSignupCompleteUrl(request, { next: nextPath })),
+    )
+  }
+
+  if (!profileResult.signupCompletedAt) {
+    return redirectToSignup(request, {
+      nextPath,
+      reason: 'signup_required',
+    })
+  }
+
+  return clearAuthFlowCookies(
     NextResponse.redirect(getLocalRedirectUrl(request, nextPath)),
   )
 }

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import { LoggedInPanel, LoginPanel } from '@/components/auth/LoginPanel'
-import { SignupRequiredPanel } from '@/components/auth/SignupPanel'
+import { redirect } from 'next/navigation'
+import { SignupCompletePanel } from '@/components/auth/SignupPanel'
 import { AppShell } from '@/components/layout/AppShell'
 import { getSafeNextPath } from '@/lib/auth/redirect'
 import {
@@ -15,17 +15,28 @@ function firstSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value
 }
 
-export default async function LoginPage({
+export default async function SignupCompletePage({
   searchParams,
 }: {
   searchParams: SearchParams
 }) {
   const params = await searchParams
   const nextPath = getSafeNextPath(firstSearchParam(params.next))
-  const error = firstSearchParam(params.error)
-  const reason = firstSearchParam(params.reason)
   const authState = await getCurrentAuthState()
   const authSummary = toAuthProfileSummary(authState)
+
+  if (!authSummary.isAuthenticated) {
+    const qs = new URLSearchParams({ error: 'login_required', next: nextPath })
+    redirect(`/signup?${qs.toString()}`)
+  }
+
+  if (!authSummary.isSignupCompleted) {
+    const qs = new URLSearchParams({
+      next: nextPath,
+      reason: 'signup_required',
+    })
+    redirect(`/signup?${qs.toString()}`)
+  }
 
   return (
     <AppShell maxWidth="mobile" panelClassName="bg-canvas">
@@ -44,19 +55,7 @@ export default async function LoginPage({
       </header>
 
       <div className="flex flex-1 items-center px-4 py-6">
-        {authSummary.isAuthenticated ? (
-          authSummary.isSignupCompleted ? (
-            <LoggedInPanel authSummary={authSummary} nextPath={nextPath} />
-          ) : (
-            <SignupRequiredPanel
-              error={error}
-              nextPath={nextPath}
-              reason={reason}
-            />
-          )
-        ) : (
-          <LoginPanel nextPath={nextPath} error={error} />
-        )}
+        <SignupCompletePanel nextPath={nextPath} />
       </div>
     </AppShell>
   )

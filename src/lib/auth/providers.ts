@@ -9,11 +9,15 @@ export interface AuthProviderConfig {
   shortLabel: string
 }
 
+export interface AuthProviderOption extends AuthProviderConfig {
+  enabled: boolean
+}
+
 export const AUTH_PROVIDERS: AuthProviderConfig[] = [
   {
     id: 'kakao',
     provider: 'kakao',
-    label: '카카오로 계속하기',
+    label: '카카오톡으로 계속하기',
     shortLabel: 'K',
   },
   {
@@ -37,6 +41,28 @@ function getEnabledProviderIds() {
       .map((provider) => provider.trim())
       .filter(Boolean),
   )
+}
+
+function getPreviewProviderIds() {
+  return new Set(
+    (process.env.AUTH_PREVIEW_PROVIDERS ?? 'kakao')
+      .split(',')
+      .map((provider) => provider.trim())
+      .filter(Boolean),
+  )
+}
+
+export function getAuthProviderOptions(): AuthProviderOption[] {
+  const enabledProviderIds = getEnabledProviderIds()
+  const previewProviderIds = getPreviewProviderIds()
+
+  return AUTH_PROVIDERS.filter(
+    (provider) =>
+      enabledProviderIds.has(provider.id) || previewProviderIds.has(provider.id),
+  ).map((provider) => ({
+    ...provider,
+    enabled: enabledProviderIds.has(provider.id),
+  }))
 }
 
 export function getEnabledAuthProviders() {

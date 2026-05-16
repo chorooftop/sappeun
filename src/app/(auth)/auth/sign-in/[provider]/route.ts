@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import {
+  AUTH_FLOW_COOKIE_NAME,
+  AUTH_FLOW_LOGIN_VALUE,
   AUTH_NEXT_COOKIE_NAME,
   AUTH_NEXT_COOKIE_PATH,
+  SIGNUP_INTENT_COOKIE_NAME,
   getAuthCallbackUrl,
   getLoginUrl,
   getSafeNextPath,
@@ -45,6 +48,17 @@ export async function GET(
     path: AUTH_NEXT_COOKIE_PATH,
     sameSite: 'lax',
     secure: process.env.NODE_ENV !== 'development',
+  })
+  response.cookies.set(AUTH_FLOW_COOKIE_NAME, AUTH_FLOW_LOGIN_VALUE, {
+    httpOnly: true,
+    maxAge: 60 * 10,
+    path: AUTH_NEXT_COOKIE_PATH,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV !== 'development',
+  })
+  response.cookies.set(SIGNUP_INTENT_COOKIE_NAME, '', {
+    maxAge: 0,
+    path: AUTH_NEXT_COOKIE_PATH,
   })
   return response
 }

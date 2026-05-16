@@ -1,8 +1,19 @@
 import { Footprints } from 'lucide-react'
+import Link from 'next/link'
+import type { AuthProfileSummary } from '@/lib/auth/session'
 
-export function HomeHero() {
+interface HomeHeroProps {
+  authSummary: AuthProfileSummary
+}
+
+export function HomeHero({ authSummary }: HomeHeroProps) {
+  const accountLabel = authSummary.displayName
+    ? `${authSummary.displayName} 계정 연결됨`
+    : '계정 연결됨'
+  const signupHref = `/signup?${new URLSearchParams({ next: '/' }).toString()}`
+
   return (
-    <section className="flex h-40 w-full flex-col items-center justify-center gap-3 rounded-lg bg-brand-primary-soft text-center">
+    <section className="flex min-h-40 w-full flex-col items-center justify-center gap-3 rounded-lg bg-brand-primary-soft px-4 py-5 text-center">
       <Footprints
         size={56}
         strokeWidth={2}
@@ -16,6 +27,49 @@ export function HomeHero() {
         <p className="text-[length:var(--text-caption)] leading-normal text-ink-700">
           오늘 만난 사물로 빙고판을 채워보세요
         </p>
+      </div>
+
+      <div className="flex max-w-full flex-wrap items-center justify-center gap-2 text-[length:var(--text-caption)] font-semibold leading-normal">
+        {authSummary.isAuthenticated && authSummary.isSignupCompleted ? (
+          <>
+            <span className="rounded-pill bg-paper px-3 py-1 text-brand-primary">
+              {accountLabel}
+            </span>
+            <Link
+              href="/logout?next=/"
+              className="rounded-pill px-3 py-1 text-ink-700 hover:bg-paper"
+            >
+              로그아웃
+            </Link>
+          </>
+        ) : authSummary.isAuthenticated ? (
+          <>
+            <span className="rounded-pill bg-paper px-3 py-1 text-warning">
+              가입 마무리 필요
+            </span>
+            <Link
+              href={signupHref}
+              className="rounded-pill px-3 py-1 text-brand-primary hover:bg-paper"
+            >
+              가입 마무리
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              href={signupHref}
+              className="rounded-pill bg-paper px-3 py-1 text-brand-primary hover:bg-brand-primary hover:text-paper"
+            >
+              계정 만들기
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-pill px-3 py-1 text-ink-700 hover:bg-paper"
+            >
+              로그인
+            </Link>
+          </>
+        )}
       </div>
     </section>
   )

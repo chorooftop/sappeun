@@ -2,7 +2,12 @@ import type { NextRequest } from 'next/server'
 
 const DEFAULT_NEXT_PATH = '/'
 export const AUTH_NEXT_COOKIE_NAME = 'sappeun-auth-next'
+export const AUTH_FLOW_COOKIE_NAME = 'sappeun-auth-flow'
+export const SIGNUP_INTENT_COOKIE_NAME = 'sappeun-signup-intent'
 export const AUTH_NEXT_COOKIE_PATH = '/'
+export const AUTH_FLOW_LOGIN_VALUE = 'login'
+export const AUTH_FLOW_SIGNUP_VALUE = 'signup'
+export const SIGNUP_INTENT_ACCEPTED_VALUE = 'accepted_required_consents'
 
 export function getSafeNextPath(
   value: string | null | undefined,
@@ -63,6 +68,41 @@ export function getLoginUrl(
   const url = new URL('/login', getRequestOrigin(request))
   if (params?.error) url.searchParams.set('error', params.error)
 
+  const safeNext = getSafeNextPath(params?.next)
+  if (safeNext !== DEFAULT_NEXT_PATH) {
+    url.searchParams.set('next', safeNext)
+  }
+
+  return url
+}
+
+export function getSignupUrl(
+  request: NextRequest,
+  params?: {
+    error?: string
+    next?: string
+    reason?: string
+  },
+) {
+  const url = new URL('/signup', getRequestOrigin(request))
+  if (params?.error) url.searchParams.set('error', params.error)
+  if (params?.reason) url.searchParams.set('reason', params.reason)
+
+  const safeNext = getSafeNextPath(params?.next)
+  if (safeNext !== DEFAULT_NEXT_PATH) {
+    url.searchParams.set('next', safeNext)
+  }
+
+  return url
+}
+
+export function getSignupCompleteUrl(
+  request: NextRequest,
+  params?: {
+    next?: string
+  },
+) {
+  const url = new URL('/signup/complete', getRequestOrigin(request))
   const safeNext = getSafeNextPath(params?.next)
   if (safeNext !== DEFAULT_NEXT_PATH) {
     url.searchParams.set('next', safeNext)
