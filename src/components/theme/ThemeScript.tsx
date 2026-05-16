@@ -1,4 +1,3 @@
-import Script from 'next/script'
 import { THEME_STORAGE_KEY } from './theme'
 
 const themeScript = `
@@ -23,9 +22,9 @@ const themeScript = `
 
 export function ThemeScript() {
   return (
-    <Script
+    <script
       id="sappeun-theme-script"
-      strategy="afterInteractive"
+      suppressHydrationWarning
       dangerouslySetInnerHTML={{ __html: themeScript }}
     />
   )
