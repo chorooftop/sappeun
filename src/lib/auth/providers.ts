@@ -1,4 +1,5 @@
 import type { Provider } from '@supabase/supabase-js'
+import { getKakaoClientId } from '@/lib/auth/kakao'
 
 export type AuthProviderId = 'kakao' | 'google' | 'apple'
 
@@ -52,6 +53,11 @@ function getPreviewProviderIds() {
   )
 }
 
+function providerHasRuntimeConfig(provider: AuthProviderConfig) {
+  if (provider.id === 'kakao') return Boolean(getKakaoClientId())
+  return true
+}
+
 export function getAuthProviderOptions(): AuthProviderOption[] {
   const enabledProviderIds = getEnabledProviderIds()
   const previewProviderIds = getPreviewProviderIds()
@@ -61,13 +67,17 @@ export function getAuthProviderOptions(): AuthProviderOption[] {
       enabledProviderIds.has(provider.id) || previewProviderIds.has(provider.id),
   ).map((provider) => ({
     ...provider,
-    enabled: enabledProviderIds.has(provider.id),
+    enabled:
+      enabledProviderIds.has(provider.id) && providerHasRuntimeConfig(provider),
   }))
 }
 
 export function getEnabledAuthProviders() {
   const enabledProviderIds = getEnabledProviderIds()
-  return AUTH_PROVIDERS.filter((provider) => enabledProviderIds.has(provider.id))
+  return AUTH_PROVIDERS.filter(
+    (provider) =>
+      enabledProviderIds.has(provider.id) && providerHasRuntimeConfig(provider),
+  )
 }
 
 export function getAuthProvider(providerId: string) {

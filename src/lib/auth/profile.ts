@@ -1,6 +1,8 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
+import { isMissingColumnError } from '@/lib/supabase/errors'
 
 const MAX_DISPLAY_NAME_LENGTH = 40
+const MAX_NICKNAME_LENGTH = 10
 const MAX_PROVIDER_LENGTH = 64
 const UNIQUE_VIOLATION = '23505'
 
@@ -18,6 +20,7 @@ interface ProfileCandidate {
 
 interface ExistingProfileRow {
   user_id: string
+  nickname?: string | null
   display_name: string | null
   avatar_url: string | null
   signup_completed_at: string | null
@@ -72,19 +75,80 @@ function profileCandidateFromUser(user: User): ProfileCandidate {
   }
 }
 
+function profileInsertPayload(
+  user: User,
+  candidate: ProfileCandidate,
+  now: string,
+  includeNickname: boolean,
+) {
+  return {
+    user_id: user.id,
+    ...(includeNickname
+      ? {
+          nickname:
+            candidate.displayName?.slice(0, MAX_NICKNAME_LENGTH) ?? null,
+        }
+      : {}),
+    display_name: candidate.displayName,
+    avatar_url: candidate.avatarUrl,
+    primary_provider: candidate.primaryProvider,
+    last_seen_at: now,
+  }
+}
+
+async function insertProfile(
+  supabase: SupabaseClient,
+  user: User,
+  candidate: ProfileCandidate,
+  now: string,
+  includeNickname: boolean,
+) {
+  return supabase
+    .from('profiles')
+    .insert(profileInsertPayload(user, candidate, now, includeNickname))
+}
+
+async function readExistingProfile(
+  supabase: SupabaseClient,
+  userId: string,
+  includeNickname: boolean,
+) {
+  return supabase
+    .from('profiles')
+    .select(
+      includeNickname
+        ? 'user_id, nickname, display_name, avatar_url, signup_completed_at'
+        : 'user_id, display_name, avatar_url, signup_completed_at',
+    )
+    .eq('user_id', userId)
+    .maybeSingle<ExistingProfileRow>()
+}
+
 export async function ensureUserProfile(
   supabase: SupabaseClient,
   user: User,
 ): Promise<EnsureUserProfileResult> {
   const candidate = profileCandidateFromUser(user)
   const now = new Date().toISOString()
-  const { error: insertError } = await supabase.from('profiles').insert({
-    user_id: user.id,
-    display_name: candidate.displayName,
-    avatar_url: candidate.avatarUrl,
-    primary_provider: candidate.primaryProvider,
-    last_seen_at: now,
-  })
+  let nicknameColumnAvailable = true
+  let { error: insertError } = await insertProfile(
+    supabase,
+    user,
+    candidate,
+    now,
+    nicknameColumnAvailable,
+  )
+
+  if (insertError && isMissingColumnError(insertError, ['nickname'])) {
+    nicknameColumnAvailable = false
+    ;({ error: insertError } = await insertProfile(
+      supabase,
+      user,
+      candidate,
+      now,
+      nicknameColumnAvailable,
+    ))
+  }
 
   if (!insertError) {
     return { isNewProfile: true, signupCompletedAt: null }
@@ -94,11 +158,24 @@ export async function ensureUserProfile(
     throw insertError
   }
 
-  const { data: existingProfile, error: selectError } = await supabase
-    .from('profiles')
-    .select('user_id, display_name, avatar_url, signup_completed_at')
-    .eq('user_id', user.id)
-    .maybeSingle<ExistingProfileRow>()
+  let { data: existingProfile, error: selectError } = await readExistingProfile(
+    supabase,
+    user.id,
+    nicknameColumnAvailable,
+  )
+
+  if (
+    selectError &&
+    nicknameColumnAvailable &&
+    isMissingColumnError(selectError, ['nickname'])
+  ) {
+    nicknameColumnAvailable = false
+    ;({ data: existingProfile, error: selectError } = await readExistingProfile(
+      supabase,
+      user.id,
+      nicknameColumnAvailable,
+    ))
+  }
 
   if (selectError) throw selectError
   if (!existingProfile) {
@@ -113,14 +190,36 @@ export async function ensureUserProfile(
     update.display_name = candidate.displayName
   }
 
+  if (
+    nicknameColumnAvailable &&
+    !existingProfile.nickname &&
+    candidate.displayName
+  ) {
+    update.nickname = candidate.displayName.slice(0, MAX_NICKNAME_LENGTH)
+    update.nickname_updated_at = now
+  }
+
   if (!existingProfile.avatar_url && candidate.avatarUrl) {
     update.avatar_url = candidate.avatarUrl
   }
 
-  const { error: updateError } = await supabase
+  let { error: updateError } = await supabase
     .from('profiles')
     .update(update)
     .eq('user_id', user.id)
+
+  if (
+    updateError &&
+    nicknameColumnAvailable &&
+    isMissingColumnError(updateError, ['nickname', 'nickname_updated_at'])
+  ) {
+    delete update.nickname
+    delete update.nickname_updated_at
+    ;({ error: updateError } = await supabase
+      .from('profiles')
+      .update(update)
+      .eq('user_id', user.id))
+  }
 
   if (updateError) throw updateError
 

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Camera, CheckCircle2, ClipboardCheck, ShieldCheck } from 'lucide-react'
+import { LogoutButton } from '@/components/auth/LogoutButton'
 import { getAuthProviderOptions } from '@/lib/auth/providers'
 import { Button } from '@/components/ui'
 
@@ -156,8 +157,6 @@ export function SignupRequiredPanel({
   nextPath,
   reason,
 }: SignupRequiredPanelProps) {
-  const logoutHref = `/logout?${new URLSearchParams({ next: '/' }).toString()}`
-
   return (
     <section className="flex flex-col gap-5 rounded-lg border border-stroke-default bg-paper p-5 shadow-card">
       <div className="flex items-start gap-3">
@@ -191,12 +190,11 @@ export function SignupRequiredPanel({
         </Button>
       </form>
 
-      <Link
-        href={logoutHref}
+      <LogoutButton
         className="inline-flex min-h-11 items-center justify-center rounded-lg text-[length:var(--text-body-2)] font-semibold leading-normal text-ink-700 hover:bg-ink-100"
       >
         로그아웃
-      </Link>
+      </LogoutButton>
     </section>
   )
 }

@@ -27,6 +27,7 @@ export interface PersistedBoardSessionV1 {
 export interface PersistedBoardSessionV2 {
   version: 2
   sessionId: string
+  boardId?: string
   mode: BoardMode
   nickname: string
   createdAt: string

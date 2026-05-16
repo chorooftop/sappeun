@@ -8,6 +8,7 @@ import type {
 
 const ACTIVE_SESSION_KEY = 'sappeun-active-board-v1'
 const SESSION_PREFIX = 'sappeun-board-v1:'
+const SESSION_CHANGE_EVENT = 'sappeun-board-session-change'
 
 function getLocalStorage(): Storage | null {
   if (typeof window === 'undefined') return null
@@ -22,6 +23,11 @@ function getLocalStorage(): Storage | null {
 
 function getSessionKey(sessionId: string): string {
   return `${SESSION_PREFIX}${sessionId}`
+}
+
+function notifySessionChange(): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new Event(SESSION_CHANGE_EVENT))
 }
 
 function isBoardMode(value: unknown): value is BoardMode {
@@ -88,6 +94,7 @@ function isPersistedBoardSessionV2(
   return (
     session.version === 2 &&
     typeof session.sessionId === 'string' &&
+    (session.boardId === undefined || typeof session.boardId === 'string') &&
     isBoardMode(session.mode) &&
     typeof session.nickname === 'string' &&
     typeof session.createdAt === 'string' &&
@@ -115,6 +122,7 @@ export function saveBoardSession(session: PersistedBoardSession): void {
   try {
     storage.setItem(getSessionKey(session.sessionId), JSON.stringify(session))
     storage.setItem(ACTIVE_SESSION_KEY, session.sessionId)
+    notifySessionChange()
   } catch (error) {
     console.warn('Unable to save board session', error)
   }
@@ -158,7 +166,10 @@ export function clearActiveBoardSession(): void {
       storage.removeItem(getSessionKey(sessionId))
     }
     storage.removeItem(ACTIVE_SESSION_KEY)
+    notifySessionChange()
   } catch (error) {
     console.warn('Unable to clear board session', error)
   }
 }
+
+export { SESSION_CHANGE_EVENT }

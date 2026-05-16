@@ -1,5 +1,7 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
+import { ensureUserBoard } from '@/lib/boards/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isMissingColumnError } from '@/lib/supabase/errors'
 import {
   GUEST_SESSION_MAX_AGE_SECONDS,
   PHOTO_BUCKET,
@@ -102,6 +104,8 @@ interface BoardCellRow {
   cell_id: string
   photo_id: string | null
   marked_at: string | null
+  completed_at?: string | null
+  completion_type?: 'photo' | 'no_photo' | 'free' | null
 }
 
 interface StorageObjectInfo {
@@ -115,17 +119,6 @@ interface StorageObjectInfo {
   }
 }
 
-function makeSeedRecipe(input: BoardSnapshotInput) {
-  return JSON.stringify({
-    version: 2,
-    mode: input.mode,
-    nickname: input.nickname,
-    clientSessionId: input.clientBoardSessionId,
-    freePosition: input.freePosition,
-    cellIds: input.cellIds,
-  })
-}
-
 function assertSupportedContentType(
   contentType: string,
 ): asserts contentType is SupportedPhotoContentType {
@@ -134,50 +127,96 @@ function assertSupportedContentType(
   }
 }
 
-async function ensureUserBoard(
-  admin: SupabaseClient,
-  userId: string,
-  input: BoardSnapshotInput,
-): Promise<string> {
-  const { data: existing, error: selectError } = await admin
-    .from('boards')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('client_session_id', input.clientBoardSessionId)
-    .maybeSingle<BoardRow>()
+const BOARD_CELL_COMPLETION_COLUMNS = [
+  'completed_at',
+  'completion_type',
+] as const
 
-  if (selectError) throw selectError
-  if (existing) {
-    await admin
-      .from('boards')
-      .update({
-        nickname: input.nickname,
-        free_position: input.freePosition,
-        cell_ids: input.cellIds,
-        seed_recipe: makeSeedRecipe(input),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', existing.id)
-      .throwOnError()
-    return existing.id
+const BOARD_CELL_ACTIVE_SELECT =
+  'board_id, position, cell_id, photo_id, marked_at, completed_at, completion_type'
+
+const BOARD_CELL_ACTIVE_BASE_SELECT =
+  'board_id, position, cell_id, photo_id, marked_at'
+
+async function markPhotoUploaded(
+  admin: SupabaseClient,
+  photoId: string,
+  capturedAt: string,
+) {
+  let { error } = await admin
+    .from('photos')
+    .update({
+      uploaded_at: capturedAt,
+      captured_at: capturedAt,
+    })
+    .eq('id', photoId)
+
+  if (error && isMissingColumnError(error, ['captured_at'])) {
+    ;({ error } = await admin
+      .from('photos')
+      .update({ uploaded_at: capturedAt })
+      .eq('id', photoId))
   }
 
-  const { data: inserted, error: insertError } = await admin
-    .from('boards')
-    .insert({
-      user_id: userId,
-      mode: input.mode,
-      nickname: input.nickname,
-      client_session_id: input.clientBoardSessionId,
-        free_position: input.freePosition,
-        cell_ids: input.cellIds,
-        seed_recipe: makeSeedRecipe(input),
-      })
-    .select('id')
-    .single<BoardRow>()
+  if (error) throw error
+}
 
-  if (insertError) throw insertError
-  return inserted.id
+async function insertPromotedPhoto(
+  admin: SupabaseClient,
+  payload: {
+    id: string
+    user_id: string
+    board_id: string
+    position: number
+    cell_id: string
+    storage_path: string
+    content_type: string
+    size_bytes: number
+    uploaded_at: string
+    captured_at: string
+    source: 'guest_promoted'
+  },
+) {
+  let { error } = await admin.from('photos').insert(payload)
+
+  if (error && isMissingColumnError(error, ['captured_at'])) {
+    const basePayload = {
+      id: payload.id,
+      user_id: payload.user_id,
+      board_id: payload.board_id,
+      position: payload.position,
+      cell_id: payload.cell_id,
+      storage_path: payload.storage_path,
+      content_type: payload.content_type,
+      size_bytes: payload.size_bytes,
+      uploaded_at: payload.uploaded_at,
+      source: payload.source,
+    }
+    ;({ error } = await admin.from('photos').insert(basePayload))
+  }
+
+  if (error) throw error
+}
+
+async function getActiveBoardCells(admin: SupabaseClient, boardId: string) {
+  let { data, error } = await admin
+    .from('board_cells')
+    .select(BOARD_CELL_ACTIVE_SELECT)
+    .eq('board_id', boardId)
+    .order('position', { ascending: true })
+    .returns<BoardCellRow[]>()
+
+  if (error && isMissingColumnError(error, BOARD_CELL_COMPLETION_COLUMNS)) {
+    ;({ data, error } = await admin
+      .from('board_cells')
+      .select(BOARD_CELL_ACTIVE_BASE_SELECT)
+      .eq('board_id', boardId)
+      .order('position', { ascending: true })
+      .returns<BoardCellRow[]>())
+  }
+
+  if (error) throw error
+  return data ?? []
 }
 
 async function createSignedUpload(admin: SupabaseClient, path: string) {
@@ -330,7 +369,8 @@ async function upsertBoardCellForPhoto(
     throw new Error('Photo is missing board cell metadata.')
   }
 
-  await admin
+  const markedAt = new Date().toISOString()
+  let { error } = await admin
     .from('board_cells')
     .upsert(
       {
@@ -338,11 +378,29 @@ async function upsertBoardCellForPhoto(
         position: photo.position,
         cell_id: photo.cell_id,
         photo_id: photo.id,
-        marked_at: new Date().toISOString(),
+        marked_at: markedAt,
+        completed_at: markedAt,
+        completion_type: 'photo',
       },
       { onConflict: 'board_id,position' },
     )
-    .throwOnError()
+
+  if (error && isMissingColumnError(error, BOARD_CELL_COMPLETION_COLUMNS)) {
+    ;({ error } = await admin
+      .from('board_cells')
+      .upsert(
+        {
+          board_id: photo.board_id,
+          position: photo.position,
+          cell_id: photo.cell_id,
+          photo_id: photo.id,
+          marked_at: markedAt,
+        },
+        { onConflict: 'board_id,position' },
+      ))
+  }
+
+  if (error) throw error
 }
 
 async function createPhotoPreviewPayload(params: {
@@ -422,11 +480,7 @@ export async function confirmPhotoUpload(params: {
       sizeBytes: photo.size_bytes,
     })
 
-    await admin
-      .from('photos')
-      .update({ uploaded_at: new Date().toISOString() })
-      .eq('id', params.photoId)
-      .throwOnError()
+    await markPhotoUploaded(admin, params.photoId, new Date().toISOString())
 
     await upsertBoardCellForPhoto(admin, photo)
   } else {
@@ -580,11 +634,30 @@ export async function deletePhoto(params: {
     if (!photo) return
     path = photo.storage_path
 
-    await admin
+    let { error: boardCellError } = await admin
       .from('board_cells')
-      .update({ photo_id: null, marked_at: null })
+      .update({
+        photo_id: null,
+        marked_at: null,
+        completed_at: null,
+        completion_type: null,
+      })
       .eq('photo_id', params.photoId)
-      .throwOnError()
+
+    if (
+      boardCellError &&
+      isMissingColumnError(boardCellError, BOARD_CELL_COMPLETION_COLUMNS)
+    ) {
+      ;({ error: boardCellError } = await admin
+        .from('board_cells')
+        .update({
+          photo_id: null,
+          marked_at: null,
+        })
+        .eq('photo_id', params.photoId))
+    }
+
+    if (boardCellError) throw boardCellError
 
     await admin
       .from('photos')
@@ -708,9 +781,7 @@ export async function promoteGuestPhotosForUser(params: {
         if (copyError) throw copyError
       }
 
-      await admin
-        .from('photos')
-        .insert({
+      await insertPromotedPhoto(admin, {
           id: photoId,
           user_id: params.userId,
           board_id: boardId,
@@ -720,12 +791,13 @@ export async function promoteGuestPhotosForUser(params: {
           content_type: upload.content_type,
           size_bytes: upload.size_bytes,
           uploaded_at: new Date().toISOString(),
+          captured_at: new Date().toISOString(),
           source: 'guest_promoted',
-        })
-        .throwOnError()
+      })
     }
 
-    await admin
+    const markedAt = new Date().toISOString()
+    let { error: boardCellError } = await admin
       .from('board_cells')
       .upsert(
         {
@@ -733,11 +805,32 @@ export async function promoteGuestPhotosForUser(params: {
           position: upload.position,
           cell_id: upload.cell_id,
           photo_id: photoId,
-          marked_at: new Date().toISOString(),
+          marked_at: markedAt,
+          completed_at: markedAt,
+          completion_type: 'photo',
         },
         { onConflict: 'board_id,position' },
       )
-      .throwOnError()
+
+    if (
+      boardCellError &&
+      isMissingColumnError(boardCellError, BOARD_CELL_COMPLETION_COLUMNS)
+    ) {
+      ;({ error: boardCellError } = await admin
+        .from('board_cells')
+        .upsert(
+          {
+            board_id: boardId,
+            position: upload.position,
+            cell_id: upload.cell_id,
+            photo_id: photoId,
+            marked_at: markedAt,
+          },
+          { onConflict: 'board_id,position' },
+        ))
+    }
+
+    if (boardCellError) throw boardCellError
 
     await admin.storage.from(PHOTO_BUCKET).remove([upload.storage_path])
 
@@ -805,16 +898,30 @@ export async function getLatestUserBoardSession(
   userId: string,
 ): Promise<PersistedBoardSessionV2 | null> {
   const admin = createAdminClient()
-  const { data: board, error: boardError } = await admin
+  let { data: board, error: boardError } = await admin
     .from('boards')
-    .select('id, mode, client_session_id, nickname, free_position, cell_ids, created_at, updated_at, ended_at')
+    .select('id, mode, client_session_id, nickname, free_position, cell_ids, created_at, updated_at, ended_at, deleted_at')
     .eq('user_id', userId)
     .is('ended_at', null)
+    .is('deleted_at', null)
     .not('client_session_id', 'is', null)
     .not('cell_ids', 'is', null)
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle<BoardRow>()
+
+  if (boardError && isMissingColumnError(boardError, ['deleted_at'])) {
+    ;({ data: board, error: boardError } = await admin
+      .from('boards')
+      .select('id, mode, client_session_id, nickname, free_position, cell_ids, created_at, updated_at, ended_at')
+      .eq('user_id', userId)
+      .is('ended_at', null)
+      .not('client_session_id', 'is', null)
+      .not('cell_ids', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle<BoardRow>())
+  }
 
   if (boardError) throw boardError
   if (
@@ -828,16 +935,9 @@ export async function getLatestUserBoardSession(
     return null
   }
 
-  const { data: cells, error: cellsError } = await admin
-    .from('board_cells')
-    .select('board_id, position, cell_id, photo_id, marked_at')
-    .eq('board_id', board.id)
-    .order('position', { ascending: true })
-    .returns<BoardCellRow[]>()
+  const cells = await getActiveBoardCells(admin, board.id)
 
-  if (cellsError) throw cellsError
-
-  const photoIds = (cells ?? [])
+  const photoIds = cells
     .map((cell) => cell.photo_id)
     .filter((photoId): photoId is string => Boolean(photoId))
   const photosById = new Map<string, PhotoRow>()
@@ -859,7 +959,7 @@ export async function getLatestUserBoardSession(
   const persistedPhotos = []
   const markedPositions = new Set<number>()
 
-  for (const cell of cells ?? []) {
+  for (const cell of cells) {
     if (cell.marked_at) markedPositions.add(cell.position)
     if (!cell.photo_id) continue
 
@@ -880,6 +980,7 @@ export async function getLatestUserBoardSession(
 
   return {
     version: 2,
+    boardId: board.id,
     sessionId: board.client_session_id,
     mode: board.mode,
     nickname: board.nickname,

@@ -1,12 +1,13 @@
 'use client'
 
 import { Flag, Shuffle, X } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CameraModal } from '@/components/camera/CameraModal'
 import { AppShell } from '@/components/layout/AppShell'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { ActionDialog } from '@/components/ui'
 import type { FacingMode } from '@/components/camera/useCameraStream'
+import type { AuthProfileSummary } from '@/lib/auth/session'
 import { checkBingoLines } from '@/lib/bingo/checkBingoLines'
 import {
   composeBoardFromCellIds,
@@ -22,6 +23,13 @@ import {
   filterPersistableMarkedPositions,
 } from '@/lib/bingo/session'
 import {
+  deleteBoardSession,
+  endBoardSession,
+  ensureBoardSession,
+  markBoardCell,
+  replaceBoardCell,
+} from '@/lib/boards/client'
+import {
   deleteStoredPhoto,
   refreshPhotoPreviews,
   uploadBoardPhoto,
@@ -36,6 +44,7 @@ import { MissionReplaceSheet } from './MissionReplaceSheet'
 import { PhotoViewerModal } from './PhotoViewerModal'
 
 interface BoardProps {
+  authSummary: AuthProfileSummary
   mode: BoardMode
   nickname: string
   cells: CellMaster[]
@@ -90,12 +99,12 @@ function shouldRefreshPreviewUrl(expiresAt: string | undefined): boolean {
 }
 
 export function BingoBoard({
+  authSummary,
   mode,
   nickname,
   cells,
   freePosition,
 }: BoardProps) {
-  const router = useRouter()
   const [boardCells, setBoardCells] = useState<readonly CellMaster[]>(cells)
   const [boardFreePosition, setBoardFreePosition] = useState(freePosition)
   const [sessionChecked, setSessionChecked] = useState(false)
@@ -115,12 +124,44 @@ export function BingoBoard({
   const [replaceFor, setReplaceFor] = useState<number | null>(null)
   const [replaceError, setReplaceError] = useState<string | null>(null)
   const [celebration, setCelebration] = useState<string | null>(null)
+  const [exitDialogOpen, setExitDialogOpen] = useState(false)
+  const [exitPending, setExitPending] = useState(false)
+  const [exitError, setExitError] = useState<string | null>(null)
+  const [finishPending, setFinishPending] = useState(false)
 
   const urlsRef = useRef<Set<string>>(new Set())
   const sessionRef = useRef<PersistedBoardSession | null>(null)
   const previousLineTotalRef = useRef(0)
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [sessionReady, setSessionReady] = useState(false)
+
+  const syncBoardSession = useCallback(async (session: PersistedBoardSession) => {
+    if (session.version !== 2) return null
+    if (session.boardId) return session.boardId
+
+    try {
+      const boardId = await ensureBoardSession(session)
+      if (!boardId) {
+        if (authSummary.isAuthenticated) {
+          throw new Error('Expected authenticated board sync.')
+        }
+        return null
+      }
+
+      const nextSession: PersistedBoardSession = {
+        ...session,
+        boardId,
+        updatedAt: new Date().toISOString(),
+      }
+      sessionRef.current = nextSession
+      saveBoardSession(nextSession)
+      return boardId
+    } catch (error) {
+      console.warn('Unable to sync board session', error)
+      if (authSummary.isAuthenticated) throw error
+      return null
+    }
+  }, [authSummary.isAuthenticated])
 
   const revokePhotoUrl = useCallback((entry: PhotoEntry) => {
     if (isObjectUrl(entry.url)) {
@@ -252,6 +293,9 @@ export function BingoBoard({
           sessionRef.current = activeSession
           setSessionReady(true)
           setSessionChecked(true)
+          void syncBoardSession(activeSession).catch((error) => {
+            console.warn('Unable to sync restored board session', error)
+          })
           void refreshStoredPhotoUrls(restoredPhotos)
           return
         }
@@ -272,10 +316,13 @@ export function BingoBoard({
       saveBoardSession(nextSession)
       setSessionReady(true)
       setSessionChecked(true)
+      void syncBoardSession(nextSession).catch((error) => {
+        console.warn('Unable to sync new board session', error)
+      })
     }, 0)
 
     return () => window.clearTimeout(timeout)
-  }, [cells, freePosition, mode, nickname, refreshStoredPhotoUrls])
+  }, [cells, freePosition, mode, nickname, refreshStoredPhotoUrls, syncBoardSession])
 
   useEffect(() => {
     if (!sessionReady || !sessionRef.current) return
@@ -366,13 +413,29 @@ export function BingoBoard({
 
   const fillPct = (marked.size / size) * 100
 
+  function goHomeWithFreshAuth() {
+    window.location.assign('/')
+  }
+
   function toggleMarked(position: number) {
+    const cell = boardCells[position]
+    const nextMarked = !marked.has(position)
+
     setMarked((prev) => {
       const next = new Set(prev)
       if (next.has(position)) next.delete(position)
       else next.add(position)
       return next
     })
+
+    const boardId = sessionRef.current?.version === 2
+      ? sessionRef.current.boardId
+      : undefined
+    if (boardId && cell) {
+      void markBoardCell(boardId, position, cell.id, nextMarked).catch((error) => {
+        console.warn('Unable to sync board mark', error)
+      })
+    }
   }
 
   function handleCellTap(position: number) {
@@ -536,13 +599,81 @@ export function BingoBoard({
     })
   }
 
-  function handleEnd() {
+  function openExitDialog() {
+    setExitError(null)
+    setExitDialogOpen(true)
+  }
+
+  async function handleSaveAndExit() {
+    const session = sessionRef.current
+    if (!session) {
+      goHomeWithFreshAuth()
+      return
+    }
+
+    setExitPending(true)
+    setExitError(null)
+    try {
+      saveBoardSession(session)
+      await syncBoardSession(session)
+      goHomeWithFreshAuth()
+    } catch (error) {
+      console.warn('Unable to save board before exit', error)
+      setExitError('저장 후 나가기를 완료하지 못했어요. 다시 시도해주세요.')
+    } finally {
+      setExitPending(false)
+    }
+  }
+
+  async function handleDiscardAndExit() {
+    const session = sessionRef.current
+    let boardId = session?.version === 2
+      ? session.boardId
+      : undefined
+
+    setExitPending(true)
+    setExitError(null)
+    try {
+      if (!boardId && session) {
+        boardId = (await syncBoardSession(session)) ?? undefined
+      }
+      if (boardId) await deleteBoardSession(boardId)
+      clearActiveBoardSession()
+      setExitDialogOpen(false)
+      goHomeWithFreshAuth()
+    } catch (error) {
+      console.warn('Unable to discard board session', error)
+      setExitError('진행 중인 미션 삭제를 완료하지 못했어요. 다시 시도해주세요.')
+    } finally {
+      setExitPending(false)
+    }
+  }
+
+  async function handleEnd() {
+    if (finishPending) return
     const ok = window.confirm(
       '산책을 종료할까요? 계정에 저장되지 않은 임시 사진은 3일 뒤 사라집니다.',
     )
-    if (ok) {
+    if (!ok) return
+
+    const session = sessionRef.current
+    let boardId = session?.version === 2
+      ? session.boardId
+      : undefined
+
+    setFinishPending(true)
+    try {
+      if (!boardId && session) {
+        boardId = (await syncBoardSession(session)) ?? undefined
+      }
+      if (boardId) await endBoardSession(boardId)
       clearActiveBoardSession()
-      router.push('/')
+      goHomeWithFreshAuth()
+    } catch (error) {
+      console.warn('Unable to end board session', error)
+      window.alert('산책 종료를 완료하지 못했어요. 다시 시도해주세요.')
+    } finally {
+      setFinishPending(false)
     }
   }
 
@@ -583,6 +714,15 @@ export function BingoBoard({
     setReplaceFor(null)
     setReplaceMode(false)
     setReplaceError(null)
+
+    const boardId = sessionRef.current?.version === 2
+      ? sessionRef.current.boardId
+      : undefined
+    if (boardId) {
+      void replaceBoardCell(boardId, position, replacement.id).catch((error) => {
+        console.warn('Unable to sync board cell replacement', error)
+      })
+    }
   }
 
   const activeCell = cameraFor !== null ? boardCells[cameraFor] : null
@@ -592,6 +732,32 @@ export function BingoBoard({
     photoViewerFor !== null ? photos.get(photoViewerFor) : undefined
   const viewerCell = photoViewerFor !== null ? boardCells[photoViewerFor] : null
   const replaceCell = replaceFor !== null ? boardCells[replaceFor] : null
+  const exitDialog = exitDialogOpen ? (
+    <ActionDialog
+      title="산책을 저장하고 나갈까요?"
+      description="저장하고 나가면 홈에서 이어하기로 돌아올 수 있어요. 삭제하고 나가면 진행 중인 미션과 임시 사진 기록이 지워져요."
+      error={exitError}
+      isPending={exitPending}
+      pendingLabel="처리 중"
+      onClose={() => setExitDialogOpen(false)}
+      actions={[
+        {
+          label: '저장하고 나가기',
+          onClick: handleSaveAndExit,
+        },
+        {
+          label: '삭제하고 나가기',
+          onClick: handleDiscardAndExit,
+          variant: 'destructive',
+        },
+        {
+          label: '취소',
+          onClick: () => setExitDialogOpen(false),
+          variant: 'tertiary',
+        },
+      ]}
+    />
+  ) : null
 
   if (!sessionChecked) {
     return (
@@ -599,8 +765,8 @@ export function BingoBoard({
         <header className="flex items-center justify-between gap-3 bg-paper px-4 py-3">
           <button
             type="button"
-            onClick={handleEnd}
-            aria-label="산책 종료"
+            onClick={openExitDialog}
+            aria-label="산책 나가기"
             className="flex h-11 w-11 items-center justify-center rounded-pill text-ink-900 transition-colors hover:bg-ink-100"
           >
             <X size={22} aria-hidden />
@@ -619,6 +785,7 @@ export function BingoBoard({
         <div className="flex flex-1 items-center justify-center px-4 text-sm font-semibold text-ink-500">
           진행 중인 산책을 불러오는 중
         </div>
+        {exitDialog}
       </AppShell>
     )
   }
@@ -628,8 +795,8 @@ export function BingoBoard({
       <header className="flex items-center justify-between gap-3 bg-paper px-4 py-3">
         <button
           type="button"
-          onClick={handleEnd}
-          aria-label="산책 종료"
+          onClick={openExitDialog}
+          aria-label="산책 나가기"
           className="flex h-11 w-11 items-center justify-center rounded-pill text-ink-900 transition-colors hover:bg-ink-100"
         >
           <X size={22} aria-hidden />
@@ -719,12 +886,15 @@ export function BingoBoard({
         <button
           type="button"
           onClick={handleEnd}
+          disabled={finishPending}
           className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-pill bg-brand-primary px-6 text-base font-semibold text-paper shadow-cell-glow transition-colors hover:brightness-95"
         >
           <Flag size={16} aria-hidden />
-          산책 종료
+          {finishPending ? '종료 중' : '산책 종료'}
         </button>
       </footer>
+
+      {exitDialog}
 
       {cameraFor !== null && activeCell && (
         <CameraModal

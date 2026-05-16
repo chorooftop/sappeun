@@ -1,5 +1,6 @@
 export { Badge } from './Badge'
 export { Button } from './Button'
+export { ActionDialog } from './ActionDialog'
 export { IconButton } from './IconButton'
 export { ProgressBar } from './ProgressBar'
 export { Tag } from './Tag'

@@ -1,8 +1,10 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
+import { isMissingColumnError } from '@/lib/supabase/errors'
 import { createClient } from '@/lib/supabase/server'
 
 export interface CurrentProfile {
   userId: string
+  nickname: string | null
   displayName: string | null
   avatarUrl: string | null
   primaryProvider: string | null
@@ -20,6 +22,7 @@ export interface CurrentAuthState {
 export interface AuthProfileSummary {
   isAuthenticated: boolean
   isSignupCompleted: boolean
+  nickname: string | null
   displayName: string | null
   avatarUrl: string | null
   primaryProvider: string | null
@@ -27,6 +30,7 @@ export interface AuthProfileSummary {
 
 interface ProfileRow {
   user_id: string
+  nickname?: string | null
   display_name: string | null
   avatar_url: string | null
   primary_provider: string | null
@@ -39,6 +43,7 @@ interface ProfileRow {
 function toCurrentProfile(row: ProfileRow): CurrentProfile {
   return {
     userId: row.user_id,
+    nickname: row.nickname ?? null,
     displayName: row.display_name,
     avatarUrl: row.avatar_url,
     primaryProvider: row.primary_provider,
@@ -55,6 +60,7 @@ export function toAuthProfileSummary(
   return {
     isAuthenticated: Boolean(authState.user),
     isSignupCompleted: Boolean(authState.profile?.signupCompletedAt),
+    nickname: authState.profile?.nickname ?? null,
     displayName: authState.profile?.displayName ?? null,
     avatarUrl: authState.profile?.avatarUrl ?? null,
     primaryProvider: authState.profile?.primaryProvider ?? null,
@@ -81,12 +87,28 @@ export async function getCurrentProfile(
   const { data, error } = await supabase
     .from('profiles')
     .select(
-      'user_id, display_name, avatar_url, primary_provider, first_login_at, last_seen_at, signup_completed_at, onboarding_completed_at',
+      'user_id, nickname, display_name, avatar_url, primary_provider, first_login_at, last_seen_at, signup_completed_at, onboarding_completed_at',
     )
     .eq('user_id', userId)
     .maybeSingle<ProfileRow>()
 
   if (error) {
+    if (isMissingColumnError(error, ['nickname'])) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('profiles')
+        .select(
+          'user_id, display_name, avatar_url, primary_provider, first_login_at, last_seen_at, signup_completed_at, onboarding_completed_at',
+        )
+        .eq('user_id', userId)
+        .maybeSingle<Omit<ProfileRow, 'nickname'>>()
+
+      if (!fallbackError) {
+        return fallbackData
+          ? toCurrentProfile({ ...fallbackData, nickname: null })
+          : null
+      }
+    }
+
     console.warn('Failed to read current profile.')
     return null
   }

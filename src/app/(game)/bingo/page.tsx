@@ -1,5 +1,9 @@
 import { redirect } from 'next/navigation'
 import { BingoBoard } from '@/components/bingo/Board'
+import {
+  getCurrentAuthState,
+  toAuthProfileSummary,
+} from '@/lib/auth/session'
 import { composeBoard } from '@/lib/bingo/compose'
 import type { BoardMode } from '@/types/bingo'
 
@@ -25,9 +29,11 @@ export default async function BingoPage({ searchParams }: PageProps) {
   }
 
   const { cells, freePosition } = composeBoard(params.mode)
+  const authState = await getCurrentAuthState()
 
   return (
     <BingoBoard
+      authSummary={toAuthProfileSummary(authState)}
       mode={params.mode}
       nickname={nickname}
       cells={cells}

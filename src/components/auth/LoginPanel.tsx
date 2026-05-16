@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Camera, ShieldCheck } from 'lucide-react'
+import { LogoutButton } from '@/components/auth/LogoutButton'
 import { getAuthProviderOptions } from '@/lib/auth/providers'
 import type { AuthProfileSummary } from '@/lib/auth/session'
 import { Button } from '@/components/ui'
@@ -106,7 +107,6 @@ export function LoggedInPanel({ authSummary, nextPath }: LoggedInPanelProps) {
   const accountLabel = authSummary.displayName
     ? `${authSummary.displayName} 계정`
     : '계정 연결됨'
-  const logoutHref = `/logout?${new URLSearchParams({ next: '/' }).toString()}`
 
   return (
     <section className="flex flex-col gap-5 rounded-lg border border-stroke-default bg-paper p-5 shadow-card">
@@ -134,12 +134,11 @@ export function LoggedInPanel({ authSummary, nextPath }: LoggedInPanelProps) {
         >
           {continueLabel}
         </Link>
-        <Link
-          href={logoutHref}
+        <LogoutButton
           className="inline-flex min-h-11 items-center justify-center rounded-lg text-[length:var(--text-body-2)] font-semibold leading-normal text-ink-700 hover:bg-ink-100"
         >
           로그아웃
-        </Link>
+        </LogoutButton>
       </div>
     </section>
   )

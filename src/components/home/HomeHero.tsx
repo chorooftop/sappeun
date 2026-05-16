@@ -1,5 +1,6 @@
 import { Footprints } from 'lucide-react'
 import Link from 'next/link'
+import { LogoutButton } from '@/components/auth/LogoutButton'
 import type { AuthProfileSummary } from '@/lib/auth/session'
 
 interface HomeHeroProps {
@@ -7,8 +8,9 @@ interface HomeHeroProps {
 }
 
 export function HomeHero({ authSummary }: HomeHeroProps) {
-  const accountLabel = authSummary.displayName
-    ? `${authSummary.displayName} 계정 연결됨`
+  const profileName = authSummary.nickname ?? authSummary.displayName
+  const accountLabel = profileName
+    ? `${profileName} 계정 연결됨`
     : '계정 연결됨'
   const signupHref = `/signup?${new URLSearchParams({ next: '/' }).toString()}`
 
@@ -36,11 +38,16 @@ export function HomeHero({ authSummary }: HomeHeroProps) {
               {accountLabel}
             </span>
             <Link
-              href="/logout?next=/"
+              href="/account"
+              className="rounded-pill px-3 py-1 text-ink-700 hover:bg-paper"
+            >
+              계정
+            </Link>
+            <LogoutButton
               className="rounded-pill px-3 py-1 text-ink-700 hover:bg-paper"
             >
               로그아웃
-            </Link>
+            </LogoutButton>
           </>
         ) : authSummary.isAuthenticated ? (
           <>

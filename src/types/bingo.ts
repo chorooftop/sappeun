@@ -8,6 +8,7 @@ export interface Board {
   mode: BoardMode
   seedRecipe: string
   createdAt: string
+  updatedAt?: string
   endedAt: string | null
 }
 
@@ -17,6 +18,8 @@ export interface BoardCell {
   cellId: string
   photoId: string | null
   markedAt: string | null
+  completedAt?: string | null
+  completionType?: 'photo' | 'no_photo' | 'free' | null
 }
 
 export interface BingoLines {

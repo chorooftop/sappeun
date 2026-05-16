@@ -16,12 +16,24 @@ import { useEffect, useState } from 'react'
 import { HomeHero } from '@/components/home/HomeHero'
 import { AppShell } from '@/components/layout/AppShell'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
-import { Badge, Button, IconButton, TextField } from '@/components/ui'
+import { ActionDialog, Badge, Button, IconButton, TextField } from '@/components/ui'
 import {
   clearActiveBoardSession,
   loadActiveBoardSession,
   saveBoardSession,
+  SESSION_CHANGE_EVENT,
 } from '@/lib/bingo/persistence'
+import {
+  loadGuestProfile,
+  saveGuestNickname,
+} from '@/lib/bingo/guestProfile'
+import {
+  adoptGuestBoardSession,
+  deleteBoardSession,
+  deleteCurrentBoardSessions,
+  updateProfileNickname,
+} from '@/lib/boards/client'
+import { createClient as createBrowserSupabaseClient } from '@/lib/supabase/client'
 import type { AuthProfileSummary } from '@/lib/auth/session'
 import { cn } from '@/lib/utils/cn'
 import type { BoardMode } from '@/types/bingo'
@@ -39,23 +51,121 @@ const SAFETY_NOTES = [
 
 interface HomeClientProps {
   authSummary: AuthProfileSummary
+  initialActiveSession: PersistedBoardSession | null
 }
 
-export function HomeClient({ authSummary }: HomeClientProps) {
+export function HomeClient({
+  authSummary,
+  initialActiveSession,
+}: HomeClientProps) {
   const router = useRouter()
-  const [nickname, setNickname] = useState('')
+  const [nickname, setNickname] = useState(() => (
+    authSummary.nickname ??
+    authSummary.displayName?.slice(0, MAX_NICKNAME_LENGTH) ??
+    loadGuestProfile()?.nickname ??
+    ''
+  ))
+  const [savedLoginNickname, setSavedLoginNickname] = useState(
+    authSummary.nickname ?? '',
+  )
   const [mode, setMode] = useState<SelectableMode>('5x5')
   const [activeSession, setActiveSession] =
-    useState<PersistedBoardSession | null>(null)
+    useState<PersistedBoardSession | null>(initialActiveSession)
+  const [startDialogOpen, setStartDialogOpen] = useState(false)
+  const [startPending, setStartPending] = useState(false)
+  const [startError, setStartError] = useState<string | null>(null)
+  const [clearPending, setClearPending] = useState(false)
   const trimmed = nickname.trim()
-  const canStart = trimmed.length > 0
+  const startNickname = trimmed || activeSession?.nickname.trim() || ''
+  const canStart = startNickname.length > 0
+  const showNicknameField =
+    !authSummary.isAuthenticated || !authSummary.isSignupCompleted
+
+  useEffect(() => {
+    if (authSummary.isAuthenticated) return
+
+    const timeout = window.setTimeout(() => {
+      const guestNickname = loadGuestProfile()?.nickname
+      if (guestNickname) setNickname(guestNickname)
+    }, 0)
+
+    return () => window.clearTimeout(timeout)
+  }, [authSummary.isAuthenticated])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function refreshIfCookieSessionExists() {
+      if (authSummary.isAuthenticated) return
+
+      try {
+        const supabase = createBrowserSupabaseClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!cancelled && user) router.refresh()
+      } catch (error) {
+        console.warn('Unable to re-check browser auth session', error)
+      }
+    }
+
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted) router.refresh()
+    }
+
+    void refreshIfCookieSessionExists()
+    window.addEventListener('pageshow', handlePageShow)
+
+    return () => {
+      cancelled = true
+      window.removeEventListener('pageshow', handlePageShow)
+    }
+  }, [authSummary.isAuthenticated, router])
+
+  useEffect(() => {
+    function syncLocalActiveSession() {
+      setActiveSession(loadActiveBoardSession())
+    }
+
+    window.addEventListener(SESSION_CHANGE_EVENT, syncLocalActiveSession)
+    window.addEventListener('storage', syncLocalActiveSession)
+
+    return () => {
+      window.removeEventListener(SESSION_CHANGE_EVENT, syncLocalActiveSession)
+      window.removeEventListener('storage', syncLocalActiveSession)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
     const timeout = window.setTimeout(() => {
       const localSession = loadActiveBoardSession()
       if (localSession) {
+        if (
+          authSummary.isAuthenticated &&
+          authSummary.isSignupCompleted &&
+          localSession.version === 2
+        ) {
+          void adoptGuestBoardSession(localSession)
+            .then((adopted) => {
+              if (cancelled) return
+              const session = adopted ?? localSession
+              saveBoardSession(session)
+              setActiveSession(session)
+            })
+            .catch((error) => {
+              console.warn('Unable to adopt local board session', error)
+              if (!cancelled) setActiveSession(localSession)
+            })
+          return
+        }
         setActiveSession(localSession)
+        return
+      }
+
+      if (initialActiveSession) {
+        saveBoardSession(initialActiveSession)
+        setActiveSession(initialActiveSession)
         return
       }
 
@@ -64,7 +174,7 @@ export function HomeClient({ authSummary }: HomeClientProps) {
         return
       }
 
-      void fetch('/api/boards/active', { cache: 'no-store' })
+      void fetch('/api/boards/current', { cache: 'no-store' })
         .then(async (response) => {
           if (!response.ok) return null
           return response.json() as Promise<{
@@ -84,20 +194,78 @@ export function HomeClient({ authSummary }: HomeClientProps) {
       cancelled = true
       window.clearTimeout(timeout)
     }
-  }, [authSummary.isAuthenticated, authSummary.isSignupCompleted])
+  }, [
+    authSummary.isAuthenticated,
+    authSummary.isSignupCompleted,
+    initialActiveSession,
+  ])
+
+  function handleNicknameChange(value: string) {
+    setNickname(value)
+    if (!authSummary.isAuthenticated) {
+      saveGuestNickname(value)
+    }
+  }
+
+  function persistLoginNickname(value = trimmed) {
+    if (
+      !value ||
+      !authSummary.isAuthenticated ||
+      !authSummary.isSignupCompleted ||
+      value === savedLoginNickname
+    ) {
+      return
+    }
+
+    void updateProfileNickname(value)
+      .then(() => setSavedLoginNickname(value))
+      .catch((error) => {
+        console.warn('Unable to update nickname', error)
+      })
+  }
+
+  function pushNewWalk() {
+    if (!authSummary.isAuthenticated) {
+      saveGuestNickname(startNickname)
+    } else {
+      persistLoginNickname(startNickname)
+    }
+    const qs = new URLSearchParams({ mode, nickname: startNickname })
+    router.push(`/bingo?${qs.toString()}`)
+  }
 
   function handleStart() {
     if (!canStart) return
     if (activeSession) {
-      const ok = window.confirm(
-        '진행 중인 산책을 지우고 새로 시작할까요?',
-      )
-      if (!ok) return
+      setStartError(null)
+      setStartDialogOpen(true)
+      return
+    }
+    pushNewWalk()
+  }
+
+  async function handleConfirmNewStart() {
+    if (!activeSession || !canStart) return
+
+    setStartPending(true)
+    setStartError(null)
+    try {
+      if (activeSession.version === 2 && activeSession.boardId) {
+        await deleteBoardSession(activeSession.boardId)
+      }
+      if (authSummary.isAuthenticated && authSummary.isSignupCompleted) {
+        await deleteCurrentBoardSessions()
+      }
       clearActiveBoardSession()
       setActiveSession(null)
+      setStartDialogOpen(false)
+      pushNewWalk()
+    } catch (error) {
+      console.warn('Unable to delete previous board session', error)
+      setStartError('진행 중인 미션을 삭제하지 못했어요. 다시 시도해주세요.')
+    } finally {
+      setStartPending(false)
     }
-    const qs = new URLSearchParams({ mode, nickname: trimmed })
-    router.push(`/bingo?${qs.toString()}`)
   }
 
   function handleContinue() {
@@ -109,11 +277,26 @@ export function HomeClient({ authSummary }: HomeClientProps) {
     router.push(`/bingo?${qs.toString()}`)
   }
 
-  function handleClearSession() {
+  async function handleClearSession() {
+    if (clearPending) return
     const ok = window.confirm('진행 중인 산책 기록을 지울까요?')
     if (!ok) return
-    clearActiveBoardSession()
-    setActiveSession(null)
+    setClearPending(true)
+    try {
+      if (activeSession?.version === 2 && activeSession.boardId) {
+        await deleteBoardSession(activeSession.boardId)
+      }
+      if (authSummary.isAuthenticated && authSummary.isSignupCompleted) {
+        await deleteCurrentBoardSessions()
+      }
+      clearActiveBoardSession()
+      setActiveSession(null)
+    } catch (error) {
+      console.warn('Unable to delete board session', error)
+      window.alert('진행 중인 산책 기록을 지우지 못했어요. 다시 시도해주세요.')
+    } finally {
+      setClearPending(false)
+    }
   }
 
   return (
@@ -143,19 +326,36 @@ export function HomeClient({ authSummary }: HomeClientProps) {
             />
           )}
 
-          <TextField
-            id="nickname"
-            label="닉네임"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            maxLength={MAX_NICKNAME_LENGTH}
-            showCounter
-            hint="한글·영문·이모지 1개 가능"
-            placeholder="예) 산책요정 주연"
-            autoComplete="off"
-          />
+          {showNicknameField && (
+            <TextField
+              id="nickname"
+              label="닉네임"
+              value={nickname}
+              onBlur={() => persistLoginNickname()}
+              onChange={(e) => handleNicknameChange(e.target.value)}
+              maxLength={MAX_NICKNAME_LENGTH}
+              showCounter
+              hint={
+                authSummary.isAuthenticated
+                  ? '계정 닉네임으로 저장돼요'
+                  : '이 브라우저에 기억해둘게요'
+              }
+              placeholder="예) 산책요정 주연"
+              autoComplete="off"
+            />
+          )}
 
           <section className="flex flex-col gap-3" aria-label="모드 선택">
+            {authSummary.isAuthenticated && authSummary.isSignupCompleted && (
+              <Button
+                variant="secondary"
+                size="md"
+                fullWidth
+                onClick={() => router.push('/walks')}
+              >
+                내 산책 기록 보기
+              </Button>
+            )}
             <PhotoModeCard
               selected={mode === '5x5' || mode === '3x3'}
               size={mode === '3x3' ? '3x3' : '5x5'}
@@ -179,9 +379,31 @@ export function HomeClient({ authSummary }: HomeClientProps) {
 
       <footer className="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-t border-ink-100 bg-paper px-4 pb-8 pt-4 md:static md:ml-auto md:mr-4 md:w-[380px] md:max-w-none md:translate-x-0 md:border-t-0 md:bg-transparent md:px-0 md:pb-6 md:pt-0">
         <Button fullWidth size="lg" disabled={!canStart} onClick={handleStart}>
-          {activeSession ? '새 산책 시작하기' : '산책 시작하기'}
+          산책 시작하기
         </Button>
       </footer>
+
+      {startDialogOpen && (
+        <ActionDialog
+          title="진행 중인 미션이 있어요"
+          description="진행중인 미션이 있는 경우 진행중이 새로운 미션을 시작할 경우 삭제 됩니다."
+          error={startError}
+          isPending={startPending}
+          pendingLabel="새로 시작 중"
+          onClose={() => setStartDialogOpen(false)}
+          actions={[
+            {
+              label: '새로하기',
+              onClick: handleConfirmNewStart,
+            },
+            {
+              label: '취소',
+              onClick: () => setStartDialogOpen(false),
+              variant: 'tertiary',
+            },
+          ]}
+        />
+      )}
     </AppShell>
   )
 }
