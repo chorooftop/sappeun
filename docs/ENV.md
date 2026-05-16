@@ -33,7 +33,7 @@ R2_PUBLIC_URL=
 - Auth endpoint 확인: `/auth/v1/settings`, `/auth/v1/health` 200 OK
 - Enabled providers: Google, Kakao
 - Kakao는 `account_email` 동의항목 권한이 아직 없으므로 Supabase built-in OAuth 진입을 사용하지 않는다.
-- 앱은 Kakao OpenID Connect authorize URL을 직접 열고, `/auth/kakao/callback`에서 Kakao `id_token`을 Supabase `signInWithIdToken({ provider: 'kakao' })`로 교환한다.
+- 앱은 Kakao OpenID Connect authorize URL을 직접 열고, `/auth/kakao/callback`에서 Kakao `id_token`을 Supabase `signInWithIdToken({ provider: 'kakao', token: id_token })`로 교환한다.
 - 앱은 Kakao 사용자에게 이메일이 없을 수 있다는 전제로 동작해야 하며, 화면 표시와 가입 완료 판단은 `profiles`와 Supabase user id를 기준으로 한다.
 - Redirect URLs는 query 없는 callback URL만 등록한다. OAuth 이후 이동할 `next` 값은 앱의 짧은 httpOnly cookie로 보관한다.
 - `supabase/migrations/0004_signup_onboarding.sql`은 원격 DB에 적용 완료됐다.
@@ -50,7 +50,7 @@ R2_PUBLIC_URL=
   - `AUTH_ENABLED_PROVIDERS=google,kakao`
 - 환경 변수 반영을 위한 Production 재배포 완료
 - `/login`과 `/signup`에서 Google/Kakao provider가 활성 상태로 노출된다.
-- `/auth/sign-in/kakao?next=/`는 Supabase Kakao authorize URL로 이동한다.
+- `/auth/sign-in/kakao?next=/`는 앱의 Kakao OIDC authorize URL로 이동한다.
 
 ## 값 발급 가이드
 

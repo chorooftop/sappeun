@@ -11,7 +11,6 @@ import {
 } from '@/lib/auth/redirect'
 import { getAuthProvider } from '@/lib/auth/providers'
 import {
-  KAKAO_AUTH_NONCE_COOKIE_NAME,
   KAKAO_AUTH_STATE_COOKIE_NAME,
   createKakaoOAuthValue,
   getKakaoAuthorizeUrl,
@@ -30,8 +29,7 @@ function authCookieOptions() {
 
 function redirectToKakao(request: NextRequest, nextPath: string) {
   const state = createKakaoOAuthValue()
-  const nonce = createKakaoOAuthValue()
-  const url = getKakaoAuthorizeUrl(request, { nonce, state })
+  const url = getKakaoAuthorizeUrl(request, { state })
 
   if (!url) {
     return NextResponse.redirect(
@@ -44,7 +42,6 @@ function redirectToKakao(request: NextRequest, nextPath: string) {
   response.cookies.set(AUTH_NEXT_COOKIE_NAME, nextPath, cookieOptions)
   response.cookies.set(AUTH_FLOW_COOKIE_NAME, AUTH_FLOW_LOGIN_VALUE, cookieOptions)
   response.cookies.set(KAKAO_AUTH_STATE_COOKIE_NAME, state, cookieOptions)
-  response.cookies.set(KAKAO_AUTH_NONCE_COOKIE_NAME, nonce, cookieOptions)
   response.cookies.set(SIGNUP_INTENT_COOKIE_NAME, '', {
     maxAge: 0,
     path: AUTH_NEXT_COOKIE_PATH,

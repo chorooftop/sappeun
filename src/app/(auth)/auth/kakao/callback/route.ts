@@ -1,7 +1,6 @@
 import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
 import {
-  KAKAO_AUTH_NONCE_COOKIE_NAME,
   KAKAO_AUTH_STATE_COOKIE_NAME,
   exchangeKakaoCodeForToken,
 } from '@/lib/auth/kakao'
@@ -26,7 +25,6 @@ const AUTH_FLOW_COOKIE_NAMES = [
   AUTH_FLOW_COOKIE_NAME,
   SIGNUP_INTENT_COOKIE_NAME,
   KAKAO_AUTH_STATE_COOKIE_NAME,
-  KAKAO_AUTH_NONCE_COOKIE_NAME,
 ] as const
 
 function clearAuthFlowCookies(response: NextResponse) {
@@ -85,10 +83,9 @@ export async function GET(request: NextRequest) {
   const authFlow = cookieStore.get(AUTH_FLOW_COOKIE_NAME)?.value
   const signupIntent = cookieStore.get(SIGNUP_INTENT_COOKIE_NAME)?.value
   const expectedState = cookieStore.get(KAKAO_AUTH_STATE_COOKIE_NAME)?.value
-  const nonce = cookieStore.get(KAKAO_AUTH_NONCE_COOKIE_NAME)?.value
   const nextPath = getSafeNextPath(cookieStore.get(AUTH_NEXT_COOKIE_NAME)?.value)
 
-  if (!code || !state || !expectedState || state !== expectedState || !nonce) {
+  if (!code || !state || !expectedState || state !== expectedState) {
     return redirectToAuthEntry(request, authFlow, 'callback_failed', nextPath)
   }
 
@@ -99,8 +96,6 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.signInWithIdToken({
       provider: 'kakao',
       token: token.id_token!,
-      access_token: token.access_token,
-      nonce,
     })
 
     if (error) {

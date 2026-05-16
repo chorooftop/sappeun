@@ -2,7 +2,6 @@ import type { NextRequest } from 'next/server'
 import { getRequestOrigin } from '@/lib/auth/redirect'
 
 export const KAKAO_AUTH_STATE_COOKIE_NAME = 'sappeun-kakao-auth-state'
-export const KAKAO_AUTH_NONCE_COOKIE_NAME = 'sappeun-kakao-auth-nonce'
 
 const KAKAO_AUTHORIZE_URL = 'https://kauth.kakao.com/oauth/authorize'
 const KAKAO_TOKEN_URL = 'https://kauth.kakao.com/oauth/token'
@@ -42,7 +41,6 @@ export function getKakaoCallbackUrl(request: NextRequest) {
 export function getKakaoAuthorizeUrl(
   request: NextRequest,
   params: {
-    nonce: string
     state: string
   },
 ) {
@@ -54,7 +52,6 @@ export function getKakaoAuthorizeUrl(
     redirect_uri: getKakaoCallbackUrl(request),
     response_type: 'code',
     scope: KAKAO_OIDC_SCOPE,
-    nonce: params.nonce,
     state: params.state,
   })
 
