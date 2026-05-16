@@ -7,6 +7,8 @@ import {
 } from '@/lib/auth/redirect'
 import { createClient } from '@/lib/supabase/server'
 
+const POST_REDIRECT_STATUS = 303
+
 function hasAcceptedRequiredConsents(formData: FormData) {
   return (
     formData.get('terms') === 'accepted' &&
@@ -30,6 +32,7 @@ export async function POST(request: NextRequest) {
   if (!hasAcceptedRequiredConsents(formData)) {
     return NextResponse.redirect(
       getSignupUrl(request, { error: 'consent_required', next: nextPath }),
+      POST_REDIRECT_STATUS,
     )
   }
 
@@ -42,6 +45,7 @@ export async function POST(request: NextRequest) {
   if (userError || !user) {
     return NextResponse.redirect(
       getSignupUrl(request, { error: 'login_required', next: nextPath }),
+      POST_REDIRECT_STATUS,
     )
   }
 
@@ -50,8 +54,12 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.redirect(
       getSignupUrl(request, { error: 'signup_failed', next: nextPath }),
+      POST_REDIRECT_STATUS,
     )
   }
 
-  return NextResponse.redirect(getSignupCompleteUrl(request, { next: nextPath }))
+  return NextResponse.redirect(
+    getSignupCompleteUrl(request, { next: nextPath }),
+    POST_REDIRECT_STATUS,
+  )
 }

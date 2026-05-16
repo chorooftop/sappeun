@@ -17,6 +17,10 @@ import {
 } from '@/lib/auth/kakao'
 import { createClient } from '@/lib/supabase/server'
 
+function redirectStatusFor(request: NextRequest) {
+  return request.method === 'POST' ? 303 : 307
+}
+
 function authCookieOptions() {
   return {
     httpOnly: true,
@@ -34,10 +38,11 @@ function redirectToKakao(request: NextRequest, nextPath: string) {
   if (!url) {
     return NextResponse.redirect(
       getLoginUrl(request, { error: 'oauth_failed', next: nextPath }),
+      redirectStatusFor(request),
     )
   }
 
-  const response = NextResponse.redirect(url)
+  const response = NextResponse.redirect(url, redirectStatusFor(request))
   const cookieOptions = authCookieOptions()
   response.cookies.set(AUTH_NEXT_COOKIE_NAME, nextPath, cookieOptions)
   response.cookies.set(AUTH_FLOW_COOKIE_NAME, AUTH_FLOW_LOGIN_VALUE, cookieOptions)
@@ -61,6 +66,7 @@ export async function GET(
   if (!authProvider) {
     return NextResponse.redirect(
       getLoginUrl(request, { error: 'provider_not_ready', next: nextPath }),
+      redirectStatusFor(request),
     )
   }
 
@@ -79,10 +85,11 @@ export async function GET(
   if (error || !data.url) {
     return NextResponse.redirect(
       getLoginUrl(request, { error: 'oauth_failed', next: nextPath }),
+      redirectStatusFor(request),
     )
   }
 
-  const response = NextResponse.redirect(data.url)
+  const response = NextResponse.redirect(data.url, redirectStatusFor(request))
   const cookieOptions = authCookieOptions()
   response.cookies.set(AUTH_NEXT_COOKIE_NAME, nextPath, cookieOptions)
   response.cookies.set(AUTH_FLOW_COOKIE_NAME, AUTH_FLOW_LOGIN_VALUE, cookieOptions)

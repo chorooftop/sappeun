@@ -18,6 +18,8 @@ import {
 } from '@/lib/auth/kakao'
 import { createClient } from '@/lib/supabase/server'
 
+const POST_REDIRECT_STATUS = 303
+
 function hasAcceptedRequiredConsents(formData: FormData) {
   return (
     formData.get('terms') === 'accepted' &&
@@ -42,10 +44,11 @@ function redirectToKakao(request: NextRequest, nextPath: string) {
   if (!url) {
     return NextResponse.redirect(
       getSignupUrl(request, { error: 'oauth_failed', next: nextPath }),
+      POST_REDIRECT_STATUS,
     )
   }
 
-  const response = NextResponse.redirect(url)
+  const response = NextResponse.redirect(url, POST_REDIRECT_STATUS)
   const cookieOptions = authCookieOptions()
   response.cookies.set(AUTH_NEXT_COOKIE_NAME, nextPath, cookieOptions)
   response.cookies.set(
@@ -91,12 +94,14 @@ export async function POST(
   if (!authProvider) {
     return NextResponse.redirect(
       getSignupUrl(request, { error: 'provider_not_ready', next: nextPath }),
+      POST_REDIRECT_STATUS,
     )
   }
 
   if (!hasAcceptedRequiredConsents(formData)) {
     return NextResponse.redirect(
       getSignupUrl(request, { error: 'consent_required', next: nextPath }),
+      POST_REDIRECT_STATUS,
     )
   }
 
@@ -115,10 +120,11 @@ export async function POST(
   if (error || !data.url) {
     return NextResponse.redirect(
       getSignupUrl(request, { error: 'oauth_failed', next: nextPath }),
+      POST_REDIRECT_STATUS,
     )
   }
 
-  const response = NextResponse.redirect(data.url)
+  const response = NextResponse.redirect(data.url, POST_REDIRECT_STATUS)
   const cookieOptions = authCookieOptions()
   response.cookies.set(AUTH_NEXT_COOKIE_NAME, nextPath, cookieOptions)
   response.cookies.set(
