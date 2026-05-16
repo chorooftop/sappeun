@@ -4,11 +4,15 @@
 
 ```bash
 # --- Public (브라우저 노출) ---
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://wtptvgxyqkqqsfkdsoox.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+# 외부 provider 콘솔 설정 전에는 비워둡니다. 예: kakao,google,apple
+AUTH_ENABLED_PROVIDERS=
 
 # --- Server only ---
+# Auth MVP의 OAuth callback/profile 생성에는 사용하지 않습니다.
+# Admin 작업이나 서버 전용 기능이 실제로 필요할 때만 설정하세요.
 SUPABASE_SERVICE_ROLE_KEY=
 
 # Cloudflare R2 (사진 저장소)
@@ -21,13 +25,21 @@ R2_BUCKET=sappeun-photos
 R2_PUBLIC_URL=
 ```
 
+## 현재 확인된 Supabase 프로젝트
+
+- Project URL: `https://wtptvgxyqkqqsfkdsoox.supabase.co`
+- Publishable key: `.env`의 `NEXT_PUBLIC_SUPABASE_ANON_KEY`에 설정 완료
+- Auth endpoint 확인: `/auth/v1/settings`, `/auth/v1/health` 200 OK
+- Enabled providers: 외부 콘솔 설정 전까지 `AUTH_ENABLED_PROVIDERS` 비움
+- 주의: `service_role secret`은 서버 전용 비밀값이며, 현재 소셜 로그인 MVP의 profile 생성에는 사용하지 않는다.
+
 ## 값 발급 가이드
 
 ### Supabase
 1. https://supabase.com/dashboard 에서 프로젝트 생성
 2. Project Settings → API
 3. `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-4. `anon public` 키 → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. `Publishable key` 또는 legacy `anon public` 키 → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 5. `service_role secret` 키 → `SUPABASE_SERVICE_ROLE_KEY` (절대 클라이언트 노출 금지)
 
 ### Cloudflare R2
