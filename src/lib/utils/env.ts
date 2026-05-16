@@ -11,14 +11,11 @@ const serverEnvSchema = z.object({
     (value) => value === '' ? undefined : value,
     z.string().min(1).optional(),
   ),
-  R2_ACCOUNT_ID: z.string().min(1),
-  R2_ACCESS_KEY_ID: z.string().min(1),
-  R2_SECRET_ACCESS_KEY: z.string().min(1),
-  R2_BUCKET: z.string().min(1),
-  R2_PUBLIC_URL: z.preprocess(
-    (value) => value === '' ? undefined : value,
-    z.url().optional(),
-  ),
+})
+
+const serviceRoleEnvSchema = z.object({
+  NEXT_PUBLIC_SUPABASE_URL: z.url(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 })
 
 export function getPublicEnv() {
@@ -32,10 +29,12 @@ export function getPublicEnv() {
 export function getServerEnv() {
   return serverEnvSchema.parse({
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
-    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
-    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
-    R2_BUCKET: process.env.R2_BUCKET,
-    R2_PUBLIC_URL: process.env.R2_PUBLIC_URL,
+  })
+}
+
+export function getServiceRoleEnv() {
+  return serviceRoleEnvSchema.parse({
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   })
 }

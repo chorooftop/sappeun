@@ -232,7 +232,7 @@ navigator.mediaDevices.getUserMedia({
 - **html-to-image** 또는 **dom-to-image-more** — html2canvas 대체 (더 가볍고 정확)
 - **Vercel / Netlify** — 정적 호스팅
 - **Supabase / Firebase** — 회원·점수·랭킹 (선택)
-- **Cloudinary / R2** — 사진 업로드·저장 (선택)
+- **Supabase Storage** — 사진 업로드·저장 (private bucket + signed URL)
 - **TensorFlow.js + MobileNet** — 사물 자동 인식 (선택, 차별화 포인트)
 
 ---

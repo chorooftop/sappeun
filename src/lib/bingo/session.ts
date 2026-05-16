@@ -1,6 +1,6 @@
 import type { BoardMode } from '@/types/bingo'
 import type { CellMaster } from '@/types/cell'
-import type { PersistedBoardSessionV1 } from '@/types/persisted-board'
+import type { PersistedBoardSessionV2 } from '@/types/persisted-board'
 
 interface CreateBoardSessionInput {
   mode: BoardMode
@@ -46,11 +46,11 @@ export function createBoardSession({
   cells,
   freePosition,
   markedPositions = [],
-}: CreateBoardSessionInput): PersistedBoardSessionV1 {
+}: CreateBoardSessionInput): PersistedBoardSessionV2 {
   const now = new Date().toISOString()
 
   return {
-    version: 1,
+    version: 2,
     sessionId: createSessionId(),
     mode,
     nickname,
@@ -62,6 +62,7 @@ export function createBoardSession({
       markedPositions,
       cells,
     ),
+    photos: [],
     endedAt: null,
   }
 }

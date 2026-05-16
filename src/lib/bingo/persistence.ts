@@ -1,5 +1,10 @@
 import type { BoardMode } from '@/types/bingo'
-import type { PersistedBoardSessionV1 } from '@/types/persisted-board'
+import type {
+  PersistedBoardPhotoV2,
+  PersistedBoardSession,
+  PersistedBoardSessionV1,
+  PersistedBoardSessionV2,
+} from '@/types/persisted-board'
 
 const ACTIVE_SESSION_KEY = 'sappeun-active-board-v1'
 const SESSION_PREFIX = 'sappeun-board-v1:'
@@ -23,8 +28,34 @@ function isBoardMode(value: unknown): value is BoardMode {
   return value === '5x5' || value === '3x3'
 }
 
+function isPhotoOwnerKind(value: unknown): value is PersistedBoardPhotoV2['ownerKind'] {
+  return value === 'guest' || value === 'user'
+}
+
+function isPhotoUploadStatus(
+  value: unknown,
+): value is PersistedBoardPhotoV2['uploadStatus'] {
+  return value === 'uploading' || value === 'uploaded' || value === 'failed'
+}
+
 function isNumberArray(value: unknown): value is number[] {
   return Array.isArray(value) && value.every((item) => Number.isInteger(item))
+}
+
+function isPersistedPhotoV2(value: unknown): value is PersistedBoardPhotoV2 {
+  if (!value || typeof value !== 'object') return false
+  const photo = value as Record<string, unknown>
+
+  return (
+    Number.isInteger(photo.position) &&
+    typeof photo.cellId === 'string' &&
+    typeof photo.photoId === 'string' &&
+    isPhotoOwnerKind(photo.ownerKind) &&
+    (photo.previewUrl === undefined || typeof photo.previewUrl === 'string') &&
+    (photo.previewUrlExpiresAt === undefined ||
+      typeof photo.previewUrlExpiresAt === 'string') &&
+    isPhotoUploadStatus(photo.uploadStatus)
+  )
 }
 
 function isPersistedBoardSessionV1(
@@ -48,7 +79,36 @@ function isPersistedBoardSessionV1(
   )
 }
 
-export function saveBoardSession(session: PersistedBoardSessionV1): void {
+function isPersistedBoardSessionV2(
+  value: unknown,
+): value is PersistedBoardSessionV2 {
+  if (!value || typeof value !== 'object') return false
+  const session = value as Record<string, unknown>
+
+  return (
+    session.version === 2 &&
+    typeof session.sessionId === 'string' &&
+    isBoardMode(session.mode) &&
+    typeof session.nickname === 'string' &&
+    typeof session.createdAt === 'string' &&
+    typeof session.updatedAt === 'string' &&
+    Number.isInteger(session.freePosition) &&
+    Array.isArray(session.cellIds) &&
+    session.cellIds.every((id) => typeof id === 'string') &&
+    isNumberArray(session.markedPositions) &&
+    Array.isArray(session.photos) &&
+    session.photos.every(isPersistedPhotoV2) &&
+    (session.endedAt === null || typeof session.endedAt === 'string')
+  )
+}
+
+function isPersistedBoardSession(
+  value: unknown,
+): value is PersistedBoardSession {
+  return isPersistedBoardSessionV1(value) || isPersistedBoardSessionV2(value)
+}
+
+export function saveBoardSession(session: PersistedBoardSession): void {
   const storage = getLocalStorage()
   if (!storage) return
 
@@ -60,7 +120,7 @@ export function saveBoardSession(session: PersistedBoardSessionV1): void {
   }
 }
 
-export function loadActiveBoardSession(): PersistedBoardSessionV1 | null {
+export function loadActiveBoardSession(): PersistedBoardSession | null {
   const storage = getLocalStorage()
   if (!storage) return null
 
@@ -75,7 +135,7 @@ export function loadActiveBoardSession(): PersistedBoardSessionV1 | null {
     }
 
     const parsed: unknown = JSON.parse(raw)
-    if (!isPersistedBoardSessionV1(parsed) || parsed.endedAt !== null) {
+    if (!isPersistedBoardSession(parsed) || parsed.endedAt !== null) {
       clearActiveBoardSession()
       return null
     }

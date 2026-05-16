@@ -39,21 +39,33 @@
 
 목표는 산책 중 촬영한 사진을 계정과 보드에 안전하게 연결하는 것이다.
 
-구현 후보:
+상태: 2026-05-16 구현 및 smoke test 완료. 상세 결과는 `/Users/oksang/Desktop/sappeun/sappeun/plans/supabase-storage-user-photo-storage-plan.md`에 기록한다.
 
-- R2 presigned upload API
+저장소 결정:
+
+- 이미지 저장은 Cloudflare R2를 쓰지 않고 Supabase Storage로 통일한다.
+- Supabase Storage private bucket에 사진 파일을 저장하고, Supabase Postgres의 `photos`, `board_cells`, guest 임시 업로드 metadata로 소유권과 보드 연결을 관리한다.
+- 상세 구현 계획은 `/Users/oksang/Desktop/sappeun/sappeun/plans/supabase-storage-user-photo-storage-plan.md`를 따른다.
+
+구현 완료:
+
+- Supabase Storage signed upload API
 - 업로드 완료 confirm API
 - Supabase `photos`와 `board_cells` 연결
+- 비로그인 guest session 기반 임시 사진 저장
+- 회원가입/로그인 후 guest 사진을 유저 사진으로 승격
+- 로그인하지 않은 임시 사진 3일 후 삭제
 - 업로드 실패/재시도 상태
 - 다른 기기에서 이어보기
-- 보드 삭제 시 사진 참조와 R2 객체 삭제 정책
+- 보드 삭제 시 사진 참조와 Storage object 삭제 정책
 
 관련 파일:
 
 - `/Users/oksang/Desktop/sappeun/sappeun/src/components/bingo/Board.tsx`
 - `/Users/oksang/Desktop/sappeun/sappeun/src/components/camera/CameraModal.tsx`
-- `/Users/oksang/Desktop/sappeun/sappeun/src/lib/r2/presign.ts`
-- `/Users/oksang/Desktop/sappeun/sappeun/src/lib/r2/keys.ts`
+- `/Users/oksang/Desktop/sappeun/sappeun/src/lib/supabase/server.ts`
+- `/Users/oksang/Desktop/sappeun/sappeun/src/lib/supabase/client.ts`
+- `/Users/oksang/Desktop/sappeun/sappeun/src/lib/storage`
 - `/Users/oksang/Desktop/sappeun/sappeun/src/app/api/photos/upload`
 - `/Users/oksang/Desktop/sappeun/sappeun/src/types/photo.ts`
 

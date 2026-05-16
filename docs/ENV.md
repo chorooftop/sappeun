@@ -12,18 +12,14 @@ KAKAO_CLIENT_ID=
 KAKAO_CLIENT_SECRET=
 
 # --- Server only ---
-# Auth MVP의 OAuth callback/profile 생성에는 사용하지 않습니다.
-# Admin 작업이나 서버 전용 기능이 실제로 필요할 때만 설정하세요.
+# 사진 저장 API, guest 사진 승격, 임시 사진 cleanup 같은 서버 전용 작업에 사용합니다.
 SUPABASE_SERVICE_ROLE_KEY=
+CRON_SECRET=
 
-# Cloudflare R2 (사진 저장소)
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-R2_BUCKET=sappeun-photos
-# 옵션: 커스텀 CDN 도메인 (예: https://cdn.sappeun.app)
-# 미설정 시 R2 endpoint URL로 fallback
-R2_PUBLIC_URL=
+# Supabase Storage (사진 저장소)
+# 이미지 저장은 Cloudflare R2를 쓰지 않고 Supabase Storage로 통일합니다.
+# Storage bucket 후보: photos-private
+# 서버 전용 Storage 관리 작업이 필요해질 때만 service_role key를 사용합니다.
 ```
 
 ## 현재 확인된 Supabase 프로젝트
@@ -95,14 +91,20 @@ R2_PUBLIC_URL=
 5. Client ID와 Client Secret은 Supabase Dashboard에만 저장한다.
 6. Google provider의 `Skip nonce checks`와 `Allow users without an email`은 기본값 OFF로 둔다.
 
-### Cloudflare R2
-1. https://dash.cloudflare.com -> R2
-2. 버킷 생성 (`sappeun-photos`)
-3. "Manage R2 API Tokens" -> 새 토큰 (Object Read & Write)
-4. `Account ID` -> `R2_ACCOUNT_ID`
-5. `Access Key ID` -> `R2_ACCESS_KEY_ID`
-6. `Secret Access Key` -> `R2_SECRET_ACCESS_KEY`
-7. 옵션: Custom Domain 연결 후 `R2_PUBLIC_URL` 설정
+### Supabase Storage
+1. Supabase Dashboard -> Storage
+2. private bucket 생성 (`photos-private`)
+3. 허용 MIME type 후보:
+   - `image/jpeg`
+   - `image/png`
+   - `image/webp`
+   - `image/heic`
+4. MVP 최대 파일 크기 후보: 5MB
+5. 로그인 유저 사진 path 후보:
+   - `users/{userId}/boards/{boardId}/cells/{position}/{photoId}.{ext}`
+6. 비로그인 임시 사진 path 후보:
+   - `temp/{guestSessionId}/boards/{clientBoardSessionId}/cells/{position}/{tempPhotoId}.{ext}`
+7. 자세한 설계는 `/Users/oksang/Desktop/sappeun/sappeun/plans/supabase-storage-user-photo-storage-plan.md` 참고
 
 ## 환경 검증
 

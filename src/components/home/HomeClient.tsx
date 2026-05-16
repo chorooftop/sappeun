@@ -20,11 +20,12 @@ import { Badge, Button, IconButton, TextField } from '@/components/ui'
 import {
   clearActiveBoardSession,
   loadActiveBoardSession,
+  saveBoardSession,
 } from '@/lib/bingo/persistence'
 import type { AuthProfileSummary } from '@/lib/auth/session'
 import { cn } from '@/lib/utils/cn'
 import type { BoardMode } from '@/types/bingo'
-import type { PersistedBoardSessionV1 } from '@/types/persisted-board'
+import type { PersistedBoardSession } from '@/types/persisted-board'
 
 type SelectableMode = BoardMode
 
@@ -45,16 +46,45 @@ export function HomeClient({ authSummary }: HomeClientProps) {
   const [nickname, setNickname] = useState('')
   const [mode, setMode] = useState<SelectableMode>('5x5')
   const [activeSession, setActiveSession] =
-    useState<PersistedBoardSessionV1 | null>(null)
+    useState<PersistedBoardSession | null>(null)
   const trimmed = nickname.trim()
   const canStart = trimmed.length > 0
 
   useEffect(() => {
+    let cancelled = false
     const timeout = window.setTimeout(() => {
-      setActiveSession(loadActiveBoardSession())
+      const localSession = loadActiveBoardSession()
+      if (localSession) {
+        setActiveSession(localSession)
+        return
+      }
+
+      if (!authSummary.isAuthenticated || !authSummary.isSignupCompleted) {
+        setActiveSession(null)
+        return
+      }
+
+      void fetch('/api/boards/active', { cache: 'no-store' })
+        .then(async (response) => {
+          if (!response.ok) return null
+          return response.json() as Promise<{
+            session: PersistedBoardSession | null
+          }>
+        })
+        .then((payload) => {
+          if (cancelled || !payload?.session) return
+          saveBoardSession(payload.session)
+          setActiveSession(payload.session)
+        })
+        .catch((error) => {
+          console.warn('Unable to restore server board session', error)
+        })
     }, 0)
-    return () => window.clearTimeout(timeout)
-  }, [])
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeout)
+    }
+  }, [authSummary.isAuthenticated, authSummary.isSignupCompleted])
 
   function handleStart() {
     if (!canStart) return
@@ -157,7 +187,7 @@ export function HomeClient({ authSummary }: HomeClientProps) {
 }
 
 interface ContinueWalkPanelProps {
-  session: PersistedBoardSessionV1
+  session: PersistedBoardSession
   onContinue: () => void
   onClear: () => void
 }
@@ -168,7 +198,9 @@ function ContinueWalkPanel({
   onClear,
 }: ContinueWalkPanelProps) {
   const total = session.cellIds.length
-  const completed = session.markedPositions.length
+  const completed =
+    session.markedPositions.length +
+    (session.version === 2 ? session.photos.length : 0)
   const dateLabel = new Intl.DateTimeFormat('ko-KR', {
     month: 'long',
     day: 'numeric',

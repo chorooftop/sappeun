@@ -7,7 +7,7 @@
 - **Next.js 16.2.6** (App Router) + **React 19.2** + **TypeScript 5**
 - **Tailwind CSS v4** (PostCSS)
 - **Supabase** (`@supabase/ssr`, `@supabase/supabase-js`) — 인증·DB·RLS
-- **Cloudflare R2** (`@aws-sdk/client-s3` + presigned URL) — 산책 사진 저장
+- **Supabase Storage** — 산책 사진 저장 계획 (private bucket + signed URL)
 - **TanStack Query v5** — 서버 상태
 - **Zod v4** — env / 입력 검증
 - **lucide-react**, **clsx**, **tailwind-merge** — UI 유틸
@@ -38,7 +38,7 @@ src/
   app/              # App Router 라우트
     (auth)/         # 로그인·회원 라우트 그룹
     (game)/         # 빙고 게임 라우트 그룹
-    api/            # Route Handlers (presigned URL, share 등)
+    api/            # Route Handlers (signed upload URL, share 등)
     share/          # 공유 페이지
     offline/        # PWA offline fallback
   components/
@@ -49,7 +49,7 @@ src/
     layout/, ui/, icons/
   lib/
     bingo/          # 보드 생성·시드·규칙
-    r2/             # R2 presign / upload
+    storage/        # Supabase Storage upload / preview (planned)
     share/          # 공유 이미지 생성
     supabase/       # 클라/서버/미들웨어 클라이언트
     utils/          # env (zod), cn 등

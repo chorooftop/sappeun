@@ -5,7 +5,9 @@ import {
   getSignupCompleteUrl,
   getSignupUrl,
 } from '@/lib/auth/redirect'
+import { guestCookieOptions, promoteGuestPhotosForUser } from '@/lib/photos/server'
 import { createClient } from '@/lib/supabase/server'
+import { GUEST_SESSION_COOKIE_NAME } from '@/lib/storage/photos'
 
 const POST_REDIRECT_STATUS = 303
 
@@ -58,8 +60,27 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  return NextResponse.redirect(
+  const response = NextResponse.redirect(
     getSignupCompleteUrl(request, { next: nextPath }),
     POST_REDIRECT_STATUS,
   )
+
+  try {
+    const guestSessionId = request.cookies.get(GUEST_SESSION_COOKIE_NAME)?.value
+    const result = await promoteGuestPhotosForUser({
+      userId: user.id,
+      guestSessionId: guestSessionId ?? null,
+    })
+
+    if (result.promoted > 0) {
+      response.cookies.set(GUEST_SESSION_COOKIE_NAME, '', {
+        ...guestCookieOptions(),
+        maxAge: 0,
+      })
+    }
+  } catch (error) {
+    console.warn('Failed to promote guest photos after signup completion.', error)
+  }
+
+  return response
 }

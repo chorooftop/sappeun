@@ -18,7 +18,9 @@ import {
   getSignupCompleteUrl,
   getSignupUrl,
 } from '@/lib/auth/redirect'
+import { guestCookieOptions, promoteGuestPhotosForUser } from '@/lib/photos/server'
 import { createClient } from '@/lib/supabase/server'
+import { GUEST_SESSION_COOKIE_NAME } from '@/lib/storage/photos'
 
 const AUTH_FLOW_COOKIE_NAMES = [
   AUTH_NEXT_COOKIE_NAME,
@@ -34,6 +36,30 @@ function clearAuthFlowCookies(response: NextResponse) {
       path: AUTH_NEXT_COOKIE_PATH,
     })
   })
+  return response
+}
+
+async function attachGuestPromotion(
+  response: NextResponse,
+  userId: string,
+  guestSessionId: string | undefined,
+) {
+  try {
+    const result = await promoteGuestPhotosForUser({
+      userId,
+      guestSessionId: guestSessionId ?? null,
+    })
+
+    if (result.promoted > 0) {
+      response.cookies.set(GUEST_SESSION_COOKIE_NAME, '', {
+        ...guestCookieOptions(),
+        maxAge: 0,
+      })
+    }
+  } catch (error) {
+    console.warn('Failed to promote guest photos after Kakao callback.', error)
+  }
+
   return response
 }
 
@@ -83,6 +109,7 @@ export async function GET(request: NextRequest) {
   const authFlow = cookieStore.get(AUTH_FLOW_COOKIE_NAME)?.value
   const signupIntent = cookieStore.get(SIGNUP_INTENT_COOKIE_NAME)?.value
   const expectedState = cookieStore.get(KAKAO_AUTH_STATE_COOKIE_NAME)?.value
+  const guestSessionId = cookieStore.get(GUEST_SESSION_COOKIE_NAME)?.value
   const nextPath = getSafeNextPath(cookieStore.get(AUTH_NEXT_COOKIE_NAME)?.value)
 
   if (!code || !state || !expectedState || state !== expectedState) {
@@ -129,8 +156,12 @@ export async function GET(request: NextRequest) {
 
   if (authFlow === AUTH_FLOW_SIGNUP_VALUE) {
     if (profileResult.signupCompletedAt) {
-      return clearAuthFlowCookies(
-        NextResponse.redirect(getLocalRedirectUrl(request, nextPath)),
+      return attachGuestPromotion(
+        clearAuthFlowCookies(
+          NextResponse.redirect(getLocalRedirectUrl(request, nextPath)),
+        ),
+        user.id,
+        guestSessionId,
       )
     }
 
@@ -147,8 +178,12 @@ export async function GET(request: NextRequest) {
       return redirectToSignup(request, { error: 'signup_failed', nextPath })
     }
 
-    return clearAuthFlowCookies(
-      NextResponse.redirect(getSignupCompleteUrl(request, { next: nextPath })),
+    return attachGuestPromotion(
+      clearAuthFlowCookies(
+        NextResponse.redirect(getSignupCompleteUrl(request, { next: nextPath })),
+      ),
+      user.id,
+      guestSessionId,
     )
   }
 
@@ -159,7 +194,11 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  return clearAuthFlowCookies(
-    NextResponse.redirect(getLocalRedirectUrl(request, nextPath)),
+  return attachGuestPromotion(
+    clearAuthFlowCookies(
+      NextResponse.redirect(getLocalRedirectUrl(request, nextPath)),
+    ),
+    user.id,
+    guestSessionId,
   )
 }

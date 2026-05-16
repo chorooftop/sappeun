@@ -2,7 +2,7 @@
 
 import { Flag, Shuffle, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CameraModal } from '@/components/camera/CameraModal'
 import { AppShell } from '@/components/layout/AppShell'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
@@ -21,10 +21,16 @@ import {
   createBoardSession,
   filterPersistableMarkedPositions,
 } from '@/lib/bingo/session'
+import {
+  deleteStoredPhoto,
+  refreshPhotoPreviews,
+  uploadBoardPhoto,
+} from '@/lib/photos/client'
 import { cn } from '@/lib/utils/cn'
 import type { BoardMode } from '@/types/bingo'
 import type { CellMaster } from '@/types/cell'
-import type { PersistedBoardSessionV1 } from '@/types/persisted-board'
+import type { PersistedBoardSession } from '@/types/persisted-board'
+import type { PhotoOwnerKind, PhotoUploadStatus } from '@/types/photo'
 import { Cell } from './Cell'
 import { MissionReplaceSheet } from './MissionReplaceSheet'
 import { PhotoViewerModal } from './PhotoViewerModal'
@@ -37,7 +43,11 @@ interface BoardProps {
 }
 
 interface PhotoEntry {
-  blob: Blob
+  blob?: Blob
+  ownerKind?: PhotoOwnerKind
+  photoId?: string
+  previewUrlExpiresAt?: string
+  uploadStatus: PhotoUploadStatus
   url: string
 }
 
@@ -70,6 +80,15 @@ function isNoPhotoCell(cell: CellMaster): boolean {
   return cell.noPhoto === true
 }
 
+function isObjectUrl(url: string): boolean {
+  return url.startsWith('blob:')
+}
+
+function shouldRefreshPreviewUrl(expiresAt: string | undefined): boolean {
+  if (!expiresAt) return true
+  return new Date(expiresAt).getTime() - Date.now() < 60_000
+}
+
 export function BingoBoard({
   mode,
   nickname,
@@ -98,10 +117,81 @@ export function BingoBoard({
   const [celebration, setCelebration] = useState<string | null>(null)
 
   const urlsRef = useRef<Set<string>>(new Set())
-  const sessionRef = useRef<PersistedBoardSessionV1 | null>(null)
+  const sessionRef = useRef<PersistedBoardSession | null>(null)
   const previousLineTotalRef = useRef(0)
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [sessionReady, setSessionReady] = useState(false)
+
+  const revokePhotoUrl = useCallback((entry: PhotoEntry) => {
+    if (isObjectUrl(entry.url)) {
+      URL.revokeObjectURL(entry.url)
+      urlsRef.current.delete(entry.url)
+    }
+  }, [])
+
+  const refreshStoredPhotoUrls = useCallback(
+    async (
+      storedPhotos: Array<{
+        ownerKind: PhotoOwnerKind
+        photoId: string
+        position: number
+      }>,
+    ) => {
+      if (!storedPhotos.length) return
+
+      try {
+        const refreshed = await refreshPhotoPreviews(
+          storedPhotos.map((photo) => ({
+            ownerKind: photo.ownerKind,
+            photoId: photo.photoId,
+          })),
+        )
+        const byId = new Map(
+          refreshed.photos.map((photo) => [
+            photo.requestedPhotoId ?? photo.photoId,
+            photo,
+          ]),
+        )
+        const missingPositions = storedPhotos
+          .filter((storedPhoto) => !byId.has(storedPhoto.photoId))
+          .map((storedPhoto) => storedPhoto.position)
+
+        setPhotos((prev) => {
+          const next = new Map(prev)
+          storedPhotos.forEach((storedPhoto) => {
+            const fresh = byId.get(storedPhoto.photoId)
+            const current = next.get(storedPhoto.position)
+            if (!current) return
+            if (!fresh) {
+              revokePhotoUrl(current)
+              next.delete(storedPhoto.position)
+              return
+            }
+            next.set(storedPhoto.position, {
+              ...current,
+              ownerKind: fresh.ownerKind,
+              photoId: fresh.photoId,
+              previewUrlExpiresAt: fresh.previewUrlExpiresAt,
+              uploadStatus: 'uploaded',
+              url: fresh.previewUrl,
+            })
+          })
+          return next
+        })
+
+        if (missingPositions.length) {
+          setMarked((prev) => {
+            const next = new Set(prev)
+            missingPositions.forEach((position) => next.delete(position))
+            return next
+          })
+        }
+      } catch (error) {
+        console.warn('Unable to refresh photo previews', error)
+      }
+    },
+    [revokePhotoUrl],
+  )
 
   useEffect(() => {
     const urls = urlsRef.current
@@ -128,17 +218,41 @@ export function BingoBoard({
         if (restored) {
           setBoardCells(restored.cells)
           setBoardFreePosition(restored.freePosition)
+          const restoredPhotos =
+            activeSession.version === 2
+              ? activeSession.photos.filter(
+                  (photo) => photo.uploadStatus === 'uploaded',
+                )
+              : []
           setMarked(
             new Set(
-              filterPersistableMarkedPositions(
-                activeSession.markedPositions,
-                restored.cells,
-              ),
+              [
+                ...filterPersistableMarkedPositions(
+                  activeSession.markedPositions,
+                  restored.cells,
+                ),
+                ...restoredPhotos.map((photo) => photo.position),
+              ],
+            ),
+          )
+          setPhotos(
+            new Map(
+              restoredPhotos.map((photo) => [
+                photo.position,
+                {
+                  ownerKind: photo.ownerKind,
+                  photoId: photo.photoId,
+                  previewUrlExpiresAt: photo.previewUrlExpiresAt,
+                  uploadStatus: 'uploaded' as const,
+                  url: photo.previewUrl ?? '',
+                },
+              ]),
             ),
           )
           sessionRef.current = activeSession
           setSessionReady(true)
           setSessionChecked(true)
+          void refreshStoredPhotoUrls(restoredPhotos)
           return
         }
 
@@ -161,13 +275,30 @@ export function BingoBoard({
     }, 0)
 
     return () => window.clearTimeout(timeout)
-  }, [cells, freePosition, mode, nickname])
+  }, [cells, freePosition, mode, nickname, refreshStoredPhotoUrls])
 
   useEffect(() => {
     if (!sessionReady || !sessionRef.current) return
 
-    const nextSession: PersistedBoardSessionV1 = {
+    const persistedPhotos = Array.from(photos.entries())
+      .filter(([, photo]) => (
+        photo.uploadStatus === 'uploaded' &&
+        Boolean(photo.photoId) &&
+        Boolean(photo.ownerKind)
+      ))
+      .map(([position, photo]) => ({
+        position,
+        cellId: boardCells[position]?.id ?? '',
+        photoId: photo.photoId!,
+        ownerKind: photo.ownerKind!,
+        previewUrl: photo.url,
+        previewUrlExpiresAt: photo.previewUrlExpiresAt,
+        uploadStatus: photo.uploadStatus,
+      }))
+
+    const nextSession: PersistedBoardSession = {
       ...sessionRef.current,
+      version: 2,
       updatedAt: new Date().toISOString(),
       freePosition: boardFreePosition,
       cellIds: boardCells.map((cell) => cell.id),
@@ -175,11 +306,12 @@ export function BingoBoard({
         marked,
         boardCells,
       ),
+      photos: persistedPhotos,
     }
 
     sessionRef.current = nextSession
     saveBoardSession(nextSession)
-  }, [boardCells, boardFreePosition, marked, sessionReady])
+  }, [boardCells, boardFreePosition, marked, photos, sessionReady])
 
   const lines = useMemo(() => checkBingoLines(marked, size), [marked, size])
   const bingoLinePositions = useMemo(
@@ -266,20 +398,42 @@ export function BingoBoard({
     toggleMarked(position)
   }
 
+  useEffect(() => {
+    if (!sessionReady) return
+
+    const storedPhotos = Array.from(photos.entries())
+      .filter(([, photo]) => (
+        photo.uploadStatus === 'uploaded' &&
+        Boolean(photo.ownerKind) &&
+        Boolean(photo.photoId) &&
+        (!photo.url || shouldRefreshPreviewUrl(photo.previewUrlExpiresAt))
+      ))
+      .map(([position, photo]) => ({
+        position,
+        ownerKind: photo.ownerKind!,
+        photoId: photo.photoId!,
+      }))
+
+    if (!storedPhotos.length) return
+
+    const timeout = window.setTimeout(() => {
+      void refreshStoredPhotoUrls(storedPhotos)
+    }, 0)
+    return () => window.clearTimeout(timeout)
+  }, [photos, refreshStoredPhotoUrls, sessionReady])
+
   function handleCapture(blob: Blob) {
     if (cameraFor === null) return
     const position = cameraFor
     const url = URL.createObjectURL(blob)
     urlsRef.current.add(url)
+    const existing = photos.get(position)
 
     setPhotos((prev) => {
       const next = new Map(prev)
-      const existing = next.get(position)
-      if (existing) {
-        URL.revokeObjectURL(existing.url)
-        urlsRef.current.delete(existing.url)
-      }
-      next.set(position, { blob, url })
+      const current = next.get(position)
+      if (current) revokePhotoUrl(current)
+      next.set(position, { blob, uploadStatus: 'uploading', url })
       return next
     })
     setMarked((prev) => {
@@ -289,14 +443,80 @@ export function BingoBoard({
       return next
     })
     setCameraFor(null)
+    void persistCapturedPhoto(position, blob, url, existing)
   }
 
-  function revokePhotoUrl(entry: PhotoEntry) {
-    URL.revokeObjectURL(entry.url)
-    urlsRef.current.delete(entry.url)
+  async function persistCapturedPhoto(
+    position: number,
+    blob: Blob,
+    localUrl: string,
+    previousPhoto: PhotoEntry | undefined,
+  ) {
+    const session = sessionRef.current
+    const cell = boardCells[position]
+    if (!session || !cell) return
+
+    try {
+      const uploaded = await uploadBoardPhoto(
+        {
+          clientBoardSessionId: session.sessionId,
+          mode,
+          nickname,
+          freePosition: boardFreePosition,
+          cellIds: boardCells.map((boardCell) => boardCell.id),
+          position,
+          cellId: cell.id,
+          contentType: blob.type || 'image/jpeg',
+          sizeBytes: blob.size,
+        },
+        blob,
+      )
+
+      setPhotos((prev) => {
+        const current = prev.get(position)
+        if (!current || current.url !== localUrl) return prev
+
+        const next = new Map(prev)
+        next.set(position, {
+          ownerKind: uploaded.ownerKind,
+          photoId: uploaded.photoId,
+          previewUrlExpiresAt: uploaded.previewUrlExpiresAt,
+          uploadStatus: 'uploaded',
+          url: uploaded.previewUrl,
+        })
+        return next
+      })
+
+      URL.revokeObjectURL(localUrl)
+      urlsRef.current.delete(localUrl)
+
+      if (previousPhoto?.photoId && previousPhoto.ownerKind) {
+        void deleteStoredPhoto(previousPhoto.photoId, previousPhoto.ownerKind)
+      }
+    } catch (error) {
+      console.warn('Photo upload failed', error)
+      setPhotos((prev) => {
+        const current = prev.get(position)
+        if (!current || current.url !== localUrl) return prev
+        const next = new Map(prev)
+        next.set(position, {
+          ...current,
+          blob,
+          uploadStatus: 'failed',
+        })
+        return next
+      })
+      setMarked((prev) => {
+        if (!prev.has(position)) return prev
+        const next = new Set(prev)
+        next.delete(position)
+        return next
+      })
+    }
   }
 
   function handleRemovePhoto(position: number) {
+    const photo = photos.get(position)
     setPhotos((prev) => {
       const existing = prev.get(position)
       if (!existing) return prev
@@ -305,6 +525,9 @@ export function BingoBoard({
       next.delete(position)
       return next
     })
+    if (photo?.photoId && photo.ownerKind) {
+      void deleteStoredPhoto(photo.photoId, photo.ownerKind)
+    }
     setMarked((prev) => {
       if (!prev.has(position)) return prev
       const next = new Set(prev)
@@ -314,7 +537,9 @@ export function BingoBoard({
   }
 
   function handleEnd() {
-    const ok = window.confirm('산책을 종료할까요? 촬영한 사진은 사라집니다.')
+    const ok = window.confirm(
+      '산책을 종료할까요? 계정에 저장되지 않은 임시 사진은 3일 뒤 사라집니다.',
+    )
     if (ok) {
       clearActiveBoardSession()
       router.push('/')
@@ -348,6 +573,9 @@ export function BingoBoard({
       const existing = prev.get(position)
       if (!existing) return prev
       revokePhotoUrl(existing)
+      if (existing.photoId && existing.ownerKind) {
+        void deleteStoredPhoto(existing.photoId, existing.ownerKind)
+      }
       const next = new Map(prev)
       next.delete(position)
       return next
