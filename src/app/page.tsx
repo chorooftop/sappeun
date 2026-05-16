@@ -3,15 +3,15 @@ import {
   getCurrentAuthState,
   toAuthProfileSummary,
 } from '@/lib/auth/session'
-import { getLatestUserBoardSession } from '@/lib/photos/server'
-import type { PersistedBoardSessionV2 } from '@/types/persisted-board'
+import { getLatestUserBoardSession } from '@/lib/boards/server'
+import type { PersistedBoardSession } from '@/types/persisted-board'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
   const authState = await getCurrentAuthState()
   const authSummary = toAuthProfileSummary(authState)
-  let initialActiveSession: PersistedBoardSessionV2 | null = null
+  let initialActiveSession: PersistedBoardSession | null = null
 
   if (authState.user && authState.profile?.signupCompletedAt) {
     try {

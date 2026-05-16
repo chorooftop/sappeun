@@ -5,9 +5,10 @@ import {
   getSignupCompleteUrl,
   getSignupUrl,
 } from '@/lib/auth/redirect'
-import { guestCookieOptions, promoteGuestPhotosForUser } from '@/lib/photos/server'
+import { guestCookieOptions, promoteGuestClipsForUser } from '@/lib/clips/server'
+import { promoteGuestPhotosForUser } from '@/lib/photos/server'
 import { createClient } from '@/lib/supabase/server'
-import { GUEST_SESSION_COOKIE_NAME } from '@/lib/storage/photos'
+import { GUEST_SESSION_COOKIE_NAME } from '@/lib/storage/clips'
 
 const POST_REDIRECT_STATUS = 303
 
@@ -67,12 +68,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const guestSessionId = request.cookies.get(GUEST_SESSION_COOKIE_NAME)?.value
-    const result = await promoteGuestPhotosForUser({
+    const clipResult = await promoteGuestClipsForUser({
+      userId: user.id,
+      guestSessionId: guestSessionId ?? null,
+    })
+    const photoResult = await promoteGuestPhotosForUser({
       userId: user.id,
       guestSessionId: guestSessionId ?? null,
     })
 
-    if (result.promoted > 0) {
+    if (clipResult.promoted > 0 || photoResult.promoted > 0) {
       response.cookies.set(GUEST_SESSION_COOKIE_NAME, '', {
         ...guestCookieOptions(),
         maxAge: 0,

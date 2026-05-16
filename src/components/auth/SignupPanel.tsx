@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Camera, CheckCircle2, ClipboardCheck, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Clapperboard, ClipboardCheck, ShieldCheck } from 'lucide-react'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import { getAuthProviderOptions } from '@/lib/auth/providers'
 import { Button } from '@/components/ui'
@@ -87,7 +87,7 @@ export function SignupPanel({ error, nextPath, reason }: SignupPanelProps) {
             사뿐 계정을 만들어요
           </h1>
           <p className="text-[length:var(--text-body-2)] leading-normal text-ink-700">
-            사진과 빙고 기록을 안전하게 보관할 수 있어요.
+            클립과 빙고 기록을 안전하게 보관할 수 있어요.
           </p>
         </div>
       </div>
@@ -138,7 +138,7 @@ export function SignupPanel({ error, nextPath, reason }: SignupPanelProps) {
           href={nextPath}
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg text-[length:var(--text-body-2)] font-semibold text-ink-700 hover:bg-ink-100"
         >
-          <Camera size={18} aria-hidden />
+          <Clapperboard size={18} aria-hidden />
           로그인 없이 계속하기
         </Link>
       </div>

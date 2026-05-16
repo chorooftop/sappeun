@@ -1,6 +1,15 @@
 'use client'
 
-import type { PersistedBoardSessionV2 } from '@/types/persisted-board'
+import type {
+  PersistedBoardSessionV2,
+  PersistedBoardSessionV3,
+  PersistedBoardSessionV4,
+} from '@/types/persisted-board'
+
+type SyncableBoardSession =
+  | PersistedBoardSessionV2
+  | PersistedBoardSessionV3
+  | PersistedBoardSessionV4
 
 async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -11,7 +20,7 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 export async function ensureBoardSession(
-  session: PersistedBoardSessionV2,
+  session: SyncableBoardSession,
 ): Promise<string | null> {
   const response = await fetch('/api/boards/session', {
     method: 'POST',
@@ -25,8 +34,8 @@ export async function ensureBoardSession(
 }
 
 export async function adoptGuestBoardSession(
-  session: PersistedBoardSessionV2,
-): Promise<PersistedBoardSessionV2 | null> {
+  session: SyncableBoardSession,
+): Promise<SyncableBoardSession | null> {
   const response = await fetch('/api/boards/adopt-guest-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -34,7 +43,7 @@ export async function adoptGuestBoardSession(
   })
 
   if (response.status === 401) return null
-  const payload = await readJson<{ session: PersistedBoardSessionV2 | null }>(
+  const payload = await readJson<{ session: SyncableBoardSession | null }>(
     response,
   )
   return payload.session

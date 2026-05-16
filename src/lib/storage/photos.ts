@@ -1,4 +1,5 @@
-import type { BoardMode } from '@/types/bingo'
+import type { BoardKind, BoardMode } from '@/types/bingo'
+import type { MissionSnapshot } from '@/types/mission'
 
 export const PHOTO_BUCKET = 'photos-private'
 export const GUEST_SESSION_COOKIE_NAME = 'sappeun_guest_session'
@@ -36,9 +37,13 @@ export interface GuestPhotoPathInput extends PhotoPathInput {
 export interface BoardSnapshotInput {
   clientBoardSessionId: string
   mode: BoardMode
+  boardKind?: BoardKind
   nickname: string
+  title?: string
+  description?: string
   freePosition: number
   cellIds: string[]
+  missionSnapshots?: MissionSnapshot[]
 }
 
 export function isSupportedPhotoContentType(

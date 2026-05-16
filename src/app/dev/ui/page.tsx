@@ -37,7 +37,7 @@ export default function DevUiPage() {
             <Button>산책 시작</Button>
             <Button variant="secondary">다시 도전</Button>
             <Button variant="tertiary">홈으로</Button>
-            <Button variant="destructive">사진 삭제</Button>
+            <Button variant="destructive">클립 삭제</Button>
           </div>
           <p className="mt-3 text-caption font-medium leading-normal text-ink-500">
             기본 사이즈 (md, 48h)
@@ -70,7 +70,7 @@ export default function DevUiPage() {
           </h2>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Tag>5×5</Tag>
-            <Tag variant="brand">사진 모드</Tag>
+            <Tag variant="brand">클립 모드</Tag>
             <Tag variant="noPhoto" icon={Lock}>
               사람
             </Tag>
@@ -79,7 +79,7 @@ export default function DevUiPage() {
 
         <section className="rounded-lg bg-paper px-8 py-6">
           <h2 className="text-heading-1 font-bold leading-tight">
-            Badges · 24px · 사진 완료 칸 우상단
+            Badges · 24px · 클립 완료 칸 우상단
           </h2>
           <div className="mt-4 flex items-center gap-4">
             <Badge label="완료" />

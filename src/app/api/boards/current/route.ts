@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/session'
-import { deleteActiveUserBoards } from '@/lib/boards/server'
-import { getLatestUserBoardSession } from '@/lib/photos/server'
+import {
+  deleteActiveUserBoards,
+  getLatestUserBoardSession,
+} from '@/lib/boards/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET() {

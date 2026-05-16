@@ -1,0 +1,1 @@
+export const MAX_CLIP_DESCRIPTION_LENGTH = 160

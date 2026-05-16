@@ -14,9 +14,10 @@ import {
   getSignupCompleteUrl,
   getSignupUrl,
 } from '@/lib/auth/redirect'
-import { guestCookieOptions, promoteGuestPhotosForUser } from '@/lib/photos/server'
+import { guestCookieOptions, promoteGuestClipsForUser } from '@/lib/clips/server'
+import { promoteGuestPhotosForUser } from '@/lib/photos/server'
 import { createClient } from '@/lib/supabase/server'
-import { GUEST_SESSION_COOKIE_NAME } from '@/lib/storage/photos'
+import { GUEST_SESSION_COOKIE_NAME } from '@/lib/storage/clips'
 
 const AUTH_FLOW_COOKIE_NAMES = [
   AUTH_NEXT_COOKIE_NAME,
@@ -40,12 +41,16 @@ async function attachGuestPromotion(
   guestSessionId: string | undefined,
 ) {
   try {
-    const result = await promoteGuestPhotosForUser({
+    const clipResult = await promoteGuestClipsForUser({
+      userId,
+      guestSessionId: guestSessionId ?? null,
+    })
+    const photoResult = await promoteGuestPhotosForUser({
       userId,
       guestSessionId: guestSessionId ?? null,
     })
 
-    if (result.promoted > 0) {
+    if (clipResult.promoted > 0 || photoResult.promoted > 0) {
       response.cookies.set(GUEST_SESSION_COOKIE_NAME, '', {
         ...guestCookieOptions(),
         maxAge: 0,

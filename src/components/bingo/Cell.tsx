@@ -1,6 +1,6 @@
 'use client'
 
-import { Camera, Check, Lock } from 'lucide-react'
+import { Camera, Check, Lock, Play } from 'lucide-react'
 import { getCategoryVisual, getSwatchVisual } from '@/lib/bingo/cellVisual'
 import { DynamicIcon } from '@/lib/icons/dynamic-icon'
 import { cn } from '@/lib/utils/cn'
@@ -15,7 +15,8 @@ interface CellProps {
   dense?: boolean
   noPhoto?: boolean
   isFree: boolean
-  photoUrl?: string
+  clipUrl?: string
+  clipPosterUrl?: string
   replaceMode?: boolean
   replaceable?: boolean
   onToggle: () => void
@@ -28,7 +29,8 @@ export function Cell({
   dense = false,
   noPhoto = false,
   isFree,
-  photoUrl,
+  clipUrl,
+  clipPosterUrl,
   replaceMode = false,
   replaceable = false,
   onToggle,
@@ -42,7 +44,7 @@ export function Cell({
     marked ? 'text-paper' : visual.labelClassName,
   )
 
-  if (photoUrl) {
+  if (clipUrl || clipPosterUrl) {
     return (
       <div
         className={cn(
@@ -54,7 +56,7 @@ export function Cell({
           type="button"
           onClick={onToggle}
           aria-pressed={marked}
-          aria-label={`${accessibleLabel} (촬영됨, 사진 보기)`}
+          aria-label={`${accessibleLabel} (촬영됨, 클립 보기)`}
           className={cn(
             'absolute inset-0 overflow-hidden rounded-cell border-2 transition-all',
             marked
@@ -63,11 +65,25 @@ export function Cell({
             inBingoLine && BINGO_GLOW_CLASS,
           )}
         >
-          <span
-            className="pointer-events-none absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${photoUrl})` }}
-            aria-hidden
-          />
+          {clipUrl ? (
+            <video
+              src={clipUrl}
+              poster={clipPosterUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              aria-hidden
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <span
+              className="pointer-events-none absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${clipPosterUrl})` }}
+              aria-hidden
+            />
+          )}
           <span className="pointer-events-none absolute inset-0 flex items-end justify-center bg-gradient-to-t from-ink-900/70 via-transparent to-transparent px-1 pb-1">
             <span className="line-clamp-1 text-[10px] font-medium text-paper">
               {accessibleLabel}
@@ -78,6 +94,9 @@ export function Cell({
               <Check size={14} strokeWidth={3} aria-hidden />
             </span>
           )}
+          <span className="pointer-events-none absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-pill bg-ink-900/65 text-paper shadow">
+            <Play size={13} fill="currentColor" strokeWidth={2.4} aria-hidden />
+          </span>
         </button>
       </div>
     )
@@ -92,7 +111,7 @@ export function Cell({
         aria-label={
           marked
             ? `중앙 FREE 칸, ${accessibleLabel} 촬영됨`
-            : `중앙 FREE 칸, ${accessibleLabel} 촬영`
+            : `중앙 FREE 칸, ${accessibleLabel} 클립 촬영`
         }
         className={cn(
           'relative flex aspect-square min-w-0 flex-col items-center justify-center gap-1 rounded-cell px-1 py-1 text-center transition-all',
@@ -128,7 +147,7 @@ export function Cell({
       onClick={onToggle}
       aria-pressed={marked}
       aria-label={
-        noPhoto ? `${accessibleLabel} (사진 없이 마킹)` : accessibleLabel
+        noPhoto ? `${accessibleLabel} (클립 없이 마킹)` : accessibleLabel
       }
       className={cn(
         'relative flex aspect-square min-w-0 flex-col items-center justify-center gap-0.5 rounded-cell border-[1.5px] px-1 py-1 text-center transition-all',

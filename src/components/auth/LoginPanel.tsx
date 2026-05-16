@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Camera, ShieldCheck } from 'lucide-react'
+import { Clapperboard, ShieldCheck } from 'lucide-react'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 import { getAuthProviderOptions } from '@/lib/auth/providers'
 import type { AuthProfileSummary } from '@/lib/auth/session'
@@ -33,7 +33,7 @@ export function LoginPanel({ nextPath, error }: LoginPanelProps) {
             산책 기록을 안전하게 보관해요
           </h1>
           <p className="text-[length:var(--text-body-2)] leading-normal text-ink-700">
-            로그인하면 찍은 사진과 완성한 빙고를 내 계정에 저장할 수 있어요.
+            로그인하면 찍은 클립과 완성한 빙고를 내 계정에 저장할 수 있어요.
           </p>
         </div>
       </div>
@@ -83,7 +83,7 @@ export function LoginPanel({ nextPath, error }: LoginPanelProps) {
         href={nextPath}
         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg text-[length:var(--text-body-2)] font-semibold text-ink-700 hover:bg-ink-100"
       >
-        <Camera size={18} aria-hidden />
+        <Clapperboard size={18} aria-hidden />
         로그인 없이 계속하기
       </Link>
 

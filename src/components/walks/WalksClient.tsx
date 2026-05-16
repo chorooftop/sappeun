@@ -1,17 +1,18 @@
 'use client'
 
-import { Camera, CheckCircle2, Clock3, Trash2 } from 'lucide-react'
+import { CheckCircle2, Clapperboard, Clock3, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ActionDialog, Button } from '@/components/ui'
+import { boardSummaryLabel } from '@/lib/bingo/boardLabels'
 import { saveBoardSession } from '@/lib/bingo/persistence'
 import { deleteBoardSession } from '@/lib/boards/client'
 import type {
   BoardHistoryDetail,
   BoardHistoryItem,
 } from '@/types/board-history'
-import type { PersistedBoardSessionV2 } from '@/types/persisted-board'
+import type { PersistedBoardSessionV4 } from '@/types/persisted-board'
 
 interface WalksClientProps {
   initialBoards: BoardHistoryItem[]
@@ -26,29 +27,45 @@ function formatDate(value: string) {
   }).format(new Date(value))
 }
 
-function toSession(board: BoardHistoryDetail): PersistedBoardSessionV2 {
+function toSession(board: BoardHistoryDetail): PersistedBoardSessionV4 {
   return {
-    version: 2,
+    version: 4,
     boardId: board.id,
     sessionId: board.sessionId,
     mode: board.mode,
+    boardKind: board.boardKind,
     nickname: board.nickname,
+    title: board.title,
+    description: board.description,
     createdAt: board.createdAt,
     updatedAt: board.updatedAt,
     freePosition: board.freePosition,
     cellIds: board.cellIds,
+    missionSnapshots: board.cells.map((cell) => cell.mission),
     markedPositions: board.cells
-      .filter((cell) => cell.markedAt || cell.completedAt || cell.photo)
+      .filter((cell) => (
+        !cell.clip &&
+        !cell.photo &&
+        (cell.markedAt ||
+          cell.completedAt ||
+          cell.completionType === 'no_media' ||
+          cell.completionType === 'no_photo' ||
+          cell.completionType === 'free')
+      ))
       .map((cell) => cell.position),
-    photos: board.cells
-      .filter((cell) => cell.photo)
+    clips: board.cells
+      .filter((cell) => cell.clip)
       .map((cell) => ({
         position: cell.position,
         cellId: cell.cellId,
-        photoId: cell.photo!.photoId,
+        clipId: cell.clip!.clipId,
         ownerKind: 'user' as const,
-        previewUrl: cell.photo!.previewUrl,
-        previewUrlExpiresAt: cell.photo!.previewUrlExpiresAt,
+        clipUrl: cell.clip!.clipUrl,
+        clipUrlExpiresAt: cell.clip!.clipUrlExpiresAt,
+        posterUrl: cell.clip!.posterUrl,
+        posterUrlExpiresAt: cell.clip!.posterUrlExpiresAt,
+        durationMs: cell.clip!.durationMs,
+        description: cell.clip!.description,
         uploadStatus: 'uploaded' as const,
       })),
     endedAt: board.endedAt,
@@ -117,13 +134,13 @@ export function WalksClient({ initialBoards }: WalksClientProps) {
   if (boards.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-ink-300 bg-paper px-5 py-10 text-center">
-        <Camera size={34} className="text-brand-primary" aria-hidden />
+        <Clapperboard size={34} className="text-brand-primary" aria-hidden />
         <div className="flex flex-col gap-1">
           <p className="text-[length:var(--text-body-1)] font-semibold text-ink-900">
             아직 저장된 산책이 없어요
           </p>
           <p className="text-[length:var(--text-caption)] text-ink-500">
-            사진을 찍고 산책을 마치면 여기에 쌓여요
+            짧은 클립을 찍고 산책을 마치면 여기에 쌓여요
           </p>
         </div>
         <Link
@@ -149,10 +166,15 @@ export function WalksClient({ initialBoards }: WalksClientProps) {
             <div className="flex items-start justify-between gap-3">
               <Link href={`/walks/${board.id}`} className="min-w-0 flex-1">
                 <p className="truncate text-[length:var(--text-body-1)] font-semibold text-ink-900">
-                  {board.nickname}
+                  {board.title}
                 </p>
+                {board.description && (
+                  <p className="mt-0.5 line-clamp-1 text-[length:var(--text-caption)] text-ink-500">
+                    {board.description}
+                  </p>
+                )}
                 <p className="mt-1 text-[length:var(--text-caption)] text-ink-500">
-                  {formatDate(board.updatedAt)}
+                  {`${boardSummaryLabel(board.boardKind, board.mode)} · ${formatDate(board.updatedAt)}`}
                 </p>
               </Link>
               <span className="rounded-pill bg-brand-primary-soft px-3 py-1 text-[length:var(--text-caption)] font-semibold text-brand-primary">
@@ -165,14 +187,14 @@ export function WalksClient({ initialBoards }: WalksClientProps) {
                 {board.completedCount}/{total}
               </span>
               <span className="flex items-center gap-1.5 rounded-md bg-brand-primary-soft px-3 py-2 text-brand-primary">
-                <Camera size={14} aria-hidden />
-                사진 {board.photoCount}
+                <Clapperboard size={14} aria-hidden />
+                클립 {board.clipCount}
               </span>
             </div>
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-[length:var(--text-caption)] text-ink-500">
                 <Clock3 size={14} aria-hidden />
-                {board.mode} 보드
+                {boardSummaryLabel(board.boardKind, board.mode)}
               </span>
               <div className="flex items-center gap-2">
                 {isActive && (

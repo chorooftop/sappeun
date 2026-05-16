@@ -1,6 +1,7 @@
 import { ALL_CELLS, CELLS_BY_CATEGORY, FREE_CELL, getCellById } from '@/data/sheet'
 import type { CellMaster } from '@/types/cell'
 import type { BoardMode } from '@/types/bingo'
+import type { MissionSnapshot } from '@/types/mission'
 import { pickRandom, shuffle } from './shuffle'
 
 interface ComposeResult {
@@ -34,6 +35,32 @@ const RECIPES: Record<BoardMode, Recipe> = {
   },
 }
 
+export function getBoardRecipe(mode: BoardMode): Pick<Recipe, 'size' | 'freePosition'> {
+  const recipe = RECIPES[mode]
+  return { size: recipe.size, freePosition: recipe.freePosition }
+}
+
+export function missionSnapshotToCell(snapshot: MissionSnapshot): CellMaster {
+  return {
+    id: snapshot.id,
+    category: snapshot.category,
+    label: snapshot.label,
+    caption: snapshot.caption,
+    captureLabel: snapshot.captureLabel,
+    hint: snapshot.hint,
+    icon: snapshot.icon,
+    variant: snapshot.variant,
+    textOnly: snapshot.textOnly,
+    fontSize: snapshot.fontSize,
+    swatch: snapshot.swatch,
+    swatchLabel: snapshot.swatchLabel,
+    camera: snapshot.camera,
+    difficulty: snapshot.difficulty,
+    noPhoto: snapshot.noPhoto,
+    fixedPosition: snapshot.fixedPosition,
+  }
+}
+
 export function composeBoard(mode: BoardMode, rng?: () => number): ComposeResult {
   const recipe = RECIPES[mode]
   const picks: CellMaster[] = [
@@ -65,14 +92,17 @@ export function composeBoardFromCellIds(
   mode: BoardMode,
   cellIds: readonly string[],
   freePosition: number,
+  missionSnapshots: readonly MissionSnapshot[] = [],
 ): ComposeResult | null {
   const recipe = RECIPES[mode]
   if (cellIds.length !== recipe.size) return null
   if (freePosition !== recipe.freePosition) return null
 
+  const snapshotsById = new Map(missionSnapshots.map((snapshot) => [snapshot.id, snapshot]))
   const cells: CellMaster[] = []
   for (const id of cellIds) {
-    const cell = getCellById(id)
+    const snapshot = snapshotsById.get(id)
+    const cell = getCellById(id) ?? (snapshot ? missionSnapshotToCell(snapshot) : null)
     if (!cell) return null
     cells.push(cell)
   }

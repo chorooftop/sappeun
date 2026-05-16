@@ -305,6 +305,15 @@ html {
     animation: bingo-pop var(--duration-celebrate) ease-out both;
   }
 
+  @keyframes recording-progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-bingo-pop {
       animation: none;

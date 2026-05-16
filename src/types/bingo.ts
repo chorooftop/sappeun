@@ -1,6 +1,15 @@
 export type BoardMode = '5x5' | '3x3'
 
+export type BoardKind = 'mission' | 'custom'
+
 export type CellState = 'idle' | 'marked' | 'free'
+
+export type BoardCellCompletionType =
+  | 'photo'
+  | 'no_photo'
+  | 'clip'
+  | 'no_media'
+  | 'free'
 
 export interface Board {
   id: string
@@ -17,9 +26,10 @@ export interface BoardCell {
   position: number
   cellId: string
   photoId: string | null
+  clipId: string | null
   markedAt: string | null
   completedAt?: string | null
-  completionType?: 'photo' | 'no_photo' | 'free' | null
+  completionType?: BoardCellCompletionType | null
 }
 
 export interface BingoLines {
