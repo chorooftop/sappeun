@@ -8,13 +8,13 @@
 
 이 문서는 아직 실제 작업에 들어가지 않은 보류 기획을 모아두는 문서다. 실제 구현에 착수하는 순간 관련 내용을 `plans/` 아래의 작업 기획서로 승격한다.
 
-회원가입/로그인은 현재 실제 작업 후보로 승격했으므로 `/Users/oksang/Desktop/sappeun/sappeun/plans/social-auth-signup-login-plan.md`에서 관리한다.
+회원가입/로그인 기반은 구현되어 `main`에 반영됐다. 현재 `plans/`에는 원격 DB 적용과 실제 OAuth 가입 smoke test를 추적하는 `/Users/oksang/Desktop/sappeun/sappeun/plans/social-signup-onboarding-plan.md`만 남긴다.
 
 ## 보류 이유
 
-사진 저장과 결과 공유는 사용자를 특정할 수 있어야 의미가 있다. 사용자를 특정하려면 회원가입과 로그인이 필요하고, 로그인 요구가 자연스럽게 받아들여지려면 앱 또는 앱에 준하는 설치형 환경이 먼저 갖춰지는 편이 좋다.
+사진 저장과 결과 공유는 사용자를 특정할 수 있어야 의미가 있다. 회원가입/로그인 기반은 마련됐지만, 계정 단위 저장/공유를 실제로 열려면 원격 Supabase에 가입 온보딩 migration을 적용하고 실제 OAuth 가입 smoke test로 `profiles.signup_completed_at`과 `user_consents` 기록을 확인해야 한다.
 
-따라서 이 문서의 기능들은 현재 바로 구현하지 않는다. 회원가입/로그인 작업이 안정화되고, 앱 환경 방향이 결정된 뒤 `plans/`로 옮겨 실제 작업으로 전환한다.
+또한 로그인 요구가 자연스럽게 받아들여지려면 앱 또는 앱에 준하는 설치형 환경이 먼저 갖춰지는 편이 좋다. 따라서 이 문서의 기능들은 현재 바로 구현하지 않는다. 가입 온보딩 검증과 앱 환경 방향이 결정된 뒤 `plans/`로 옮겨 실제 작업으로 전환한다.
 
 ## 후속 기능 1. 앱 환경 기반 구축
 
@@ -124,5 +124,6 @@
 이 문서의 기능은 아래 조건 중 하나가 충족되면 `plans/`로 옮긴다.
 
 - 해당 기능을 바로 구현하기로 결정했다.
-- 회원가입/로그인 구현이 완료되어 사용자 특정성이 확보됐다.
+- 원격 Supabase에 `0004_signup_onboarding.sql`을 적용했고, 실제 OAuth 가입 smoke test로 `profiles.signup_completed_at`과 `user_consents` 기록을 확인했다.
 - 앱/PWA 환경 방향이 확정되어 권한, 세션, deep link 정책을 구체화할 수 있다.
+- 사진 저장 또는 결과 공유의 계정 단위 데이터 모델을 확정했다.

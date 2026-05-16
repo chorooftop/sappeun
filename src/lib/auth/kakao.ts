@@ -1,0 +1,91 @@
+import type { NextRequest } from 'next/server'
+import { getRequestOrigin } from '@/lib/auth/redirect'
+
+export const KAKAO_AUTH_STATE_COOKIE_NAME = 'sappeun-kakao-auth-state'
+export const KAKAO_AUTH_NONCE_COOKIE_NAME = 'sappeun-kakao-auth-nonce'
+
+const KAKAO_AUTHORIZE_URL = 'https://kauth.kakao.com/oauth/authorize'
+const KAKAO_TOKEN_URL = 'https://kauth.kakao.com/oauth/token'
+const KAKAO_OIDC_SCOPE = 'openid profile_nickname profile_image'
+
+export interface KakaoTokenResponse {
+  access_token?: string
+  id_token?: string
+  error?: string
+  error_description?: string
+}
+
+export function getKakaoClientId() {
+  return process.env.KAKAO_CLIENT_ID?.trim() || null
+}
+
+function getKakaoClientSecret() {
+  return process.env.KAKAO_CLIENT_SECRET?.trim() || null
+}
+
+export function createKakaoOAuthValue() {
+  return crypto.randomUUID()
+}
+
+export function getKakaoCallbackUrl(request: NextRequest) {
+  return new URL('/auth/kakao/callback', getRequestOrigin(request)).toString()
+}
+
+export function getKakaoAuthorizeUrl(
+  request: NextRequest,
+  params: {
+    nonce: string
+    state: string
+  },
+) {
+  const clientId = getKakaoClientId()
+  if (!clientId) return null
+
+  const url = new URL(KAKAO_AUTHORIZE_URL)
+  url.searchParams.set('client_id', clientId)
+  url.searchParams.set('redirect_uri', getKakaoCallbackUrl(request))
+  url.searchParams.set('response_type', 'code')
+  url.searchParams.set('scope', KAKAO_OIDC_SCOPE)
+  url.searchParams.set('nonce', params.nonce)
+  url.searchParams.set('state', params.state)
+  return url.toString()
+}
+
+export async function exchangeKakaoCodeForToken(
+  request: NextRequest,
+  code: string,
+) {
+  const clientId = getKakaoClientId()
+  if (!clientId) {
+    throw new Error('Missing KAKAO_CLIENT_ID')
+  }
+
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: clientId,
+    redirect_uri: getKakaoCallbackUrl(request),
+    code,
+  })
+
+  const clientSecret = getKakaoClientSecret()
+  if (clientSecret) {
+    body.set('client_secret', clientSecret)
+  }
+
+  const response = await fetch(KAKAO_TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+    },
+    body,
+  })
+
+  const token = (await response.json()) as KakaoTokenResponse
+  if (!response.ok || !token.id_token) {
+    throw new Error(
+      token.error_description || token.error || 'Kakao token exchange failed',
+    )
+  }
+
+  return token
+}

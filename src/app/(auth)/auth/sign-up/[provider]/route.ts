@@ -11,6 +11,12 @@ import {
   getSafeNextPath,
 } from '@/lib/auth/redirect'
 import { getAuthProvider } from '@/lib/auth/providers'
+import {
+  KAKAO_AUTH_NONCE_COOKIE_NAME,
+  KAKAO_AUTH_STATE_COOKIE_NAME,
+  createKakaoOAuthValue,
+  getKakaoAuthorizeUrl,
+} from '@/lib/auth/kakao'
 import { createClient } from '@/lib/supabase/server'
 
 function hasAcceptedRequiredConsents(formData: FormData) {
@@ -28,6 +34,35 @@ function authCookieOptions() {
     sameSite: 'lax' as const,
     secure: process.env.NODE_ENV !== 'development',
   }
+}
+
+function redirectToKakao(request: NextRequest, nextPath: string) {
+  const state = createKakaoOAuthValue()
+  const nonce = createKakaoOAuthValue()
+  const url = getKakaoAuthorizeUrl(request, { nonce, state })
+
+  if (!url) {
+    return NextResponse.redirect(
+      getSignupUrl(request, { error: 'oauth_failed', next: nextPath }),
+    )
+  }
+
+  const response = NextResponse.redirect(url)
+  const cookieOptions = authCookieOptions()
+  response.cookies.set(AUTH_NEXT_COOKIE_NAME, nextPath, cookieOptions)
+  response.cookies.set(
+    AUTH_FLOW_COOKIE_NAME,
+    AUTH_FLOW_SIGNUP_VALUE,
+    cookieOptions,
+  )
+  response.cookies.set(
+    SIGNUP_INTENT_COOKIE_NAME,
+    SIGNUP_INTENT_ACCEPTED_VALUE,
+    cookieOptions,
+  )
+  response.cookies.set(KAKAO_AUTH_STATE_COOKIE_NAME, state, cookieOptions)
+  response.cookies.set(KAKAO_AUTH_NONCE_COOKIE_NAME, nonce, cookieOptions)
+  return response
 }
 
 export async function GET(
@@ -66,6 +101,10 @@ export async function POST(
     return NextResponse.redirect(
       getSignupUrl(request, { error: 'consent_required', next: nextPath }),
     )
+  }
+
+  if (authProvider.id === 'kakao') {
+    return redirectToKakao(request, nextPath)
   }
 
   const supabase = await createClient()
