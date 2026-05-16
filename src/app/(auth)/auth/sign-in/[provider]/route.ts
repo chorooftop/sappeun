@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import {
+  AUTH_NEXT_COOKIE_NAME,
+  AUTH_NEXT_COOKIE_PATH,
   getAuthCallbackUrl,
   getLoginUrl,
   getSafeNextPath,
@@ -26,7 +28,7 @@ export async function GET(
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: authProvider.provider,
     options: {
-      redirectTo: getAuthCallbackUrl(request, nextPath),
+      redirectTo: getAuthCallbackUrl(request),
     },
   })
 
@@ -36,7 +38,15 @@ export async function GET(
     )
   }
 
-  return NextResponse.redirect(data.url)
+  const response = NextResponse.redirect(data.url)
+  response.cookies.set(AUTH_NEXT_COOKIE_NAME, nextPath, {
+    httpOnly: true,
+    maxAge: 60 * 10,
+    path: AUTH_NEXT_COOKIE_PATH,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV !== 'development',
+  })
+  return response
 }
 
 export const POST = GET

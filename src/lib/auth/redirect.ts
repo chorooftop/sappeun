@@ -1,18 +1,30 @@
 import type { NextRequest } from 'next/server'
 
 const DEFAULT_NEXT_PATH = '/'
+export const AUTH_NEXT_COOKIE_NAME = 'sappeun-auth-next'
+export const AUTH_NEXT_COOKIE_PATH = '/'
 
 export function getSafeNextPath(
   value: string | null | undefined,
   fallback = DEFAULT_NEXT_PATH,
 ) {
   if (!value) return fallback
-  if (!value.startsWith('/') || value.startsWith('//') || value.includes('\\')) {
+
+  let nextPath = value
+  if (!nextPath.startsWith('/')) {
+    try {
+      nextPath = decodeURIComponent(nextPath)
+    } catch {
+      return fallback
+    }
+  }
+
+  if (!nextPath.startsWith('/') || nextPath.startsWith('//') || nextPath.includes('\\')) {
     return fallback
   }
 
   try {
-    const parsed = new URL(value, 'https://sappeun.local')
+    const parsed = new URL(nextPath, 'https://sappeun.local')
     if (parsed.origin !== 'https://sappeun.local') return fallback
     return `${parsed.pathname}${parsed.search}${parsed.hash}`
   } catch {
@@ -20,12 +32,8 @@ export function getSafeNextPath(
   }
 }
 
-export function getAuthCallbackUrl(request: NextRequest, nextPath?: string) {
+export function getAuthCallbackUrl(request: NextRequest) {
   const url = new URL('/auth/callback', getRequestOrigin(request))
-  const safeNext = getSafeNextPath(nextPath)
-  if (safeNext !== DEFAULT_NEXT_PATH) {
-    url.searchParams.set('next', safeNext)
-  }
   return url.toString()
 }
 

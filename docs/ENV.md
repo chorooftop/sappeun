@@ -7,8 +7,8 @@
 NEXT_PUBLIC_SUPABASE_URL=https://wtptvgxyqkqqsfkdsoox.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
-# 외부 provider 콘솔 설정 전에는 비워둡니다. 예: kakao,google,apple
-AUTH_ENABLED_PROVIDERS=
+# 외부 provider 콘솔 설정 완료 후 활성화합니다. 예: kakao,google,apple
+AUTH_ENABLED_PROVIDERS=google
 
 # --- Server only ---
 # Auth MVP의 OAuth callback/profile 생성에는 사용하지 않습니다.
@@ -30,8 +30,21 @@ R2_PUBLIC_URL=
 - Project URL: `https://wtptvgxyqkqqsfkdsoox.supabase.co`
 - Publishable key: `.env`의 `NEXT_PUBLIC_SUPABASE_ANON_KEY`에 설정 완료
 - Auth endpoint 확인: `/auth/v1/settings`, `/auth/v1/health` 200 OK
-- Enabled providers: 외부 콘솔 설정 전까지 `AUTH_ENABLED_PROVIDERS` 비움
+- Enabled providers: Google 설정 완료 후 `AUTH_ENABLED_PROVIDERS=google`
+- Kakao 상태: Supabase built-in Kakao OAuth가 기본 요청하는 `account_email` 권한이 현재 Kakao 앱에서 `권한 없음` 상태라 버튼 노출 보류
+- Redirect URLs는 query 없는 callback URL만 등록한다. OAuth 이후 이동할 `next` 값은 앱의 짧은 httpOnly cookie로 보관한다.
 - 주의: `service_role secret`은 서버 전용 비밀값이며, 현재 소셜 로그인 MVP의 profile 생성에는 사용하지 않는다.
+
+## 현재 확인된 Vercel 설정
+
+- Production domain: `https://sappeun.vercel.app`
+- Production/Preview 환경 변수 등록 완료:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_SITE_URL`
+  - `AUTH_ENABLED_PROVIDERS`
+- 환경 변수 반영을 위한 Production 재배포 완료
+- `/login?next=/bingo`에서 Google 버튼 노출 확인
 
 ## 값 발급 가이드
 
@@ -41,6 +54,32 @@ R2_PUBLIC_URL=
 3. `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
 4. `Publishable key` 또는 legacy `anon public` 키 → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 5. `service_role secret` 키 → `SUPABASE_SERVICE_ROLE_KEY` (절대 클라이언트 노출 금지)
+
+### Kakao OAuth
+1. Kakao Developers → 내 애플리케이션 → `사뿐`
+2. 카카오 로그인 상태: ON
+3. REST API 키의 카카오 로그인 Redirect URI:
+   - `https://wtptvgxyqkqqsfkdsoox.supabase.co/auth/v1/callback`
+4. Supabase Dashboard → Authentication → Sign In / Providers → Kakao
+5. REST API Key와 Client Secret Code는 Supabase Dashboard에만 저장한다.
+6. 카카오가 이메일을 반환하지 않아도 로그인할 수 있도록 Supabase Kakao provider의 `Allow users without an email`을 켠다.
+7. 현재 Kakao 앱은 `account_email` 동의항목 권한이 없어서 Supabase built-in Kakao OAuth 요청이 `KOE205`로 실패한다. Kakao 비즈 앱 전환과 비즈니스 정보 심사 후 개인정보 동의항목 권한 신청을 완료하기 전까지 `AUTH_ENABLED_PROVIDERS`에는 `kakao`를 넣지 않는다.
+
+### Google OAuth
+1. Google Cloud Console → Google Auth Platform
+2. OAuth consent app:
+   - App name: `사뿐`
+   - Audience: External
+3. OAuth client:
+   - Application type: Web application
+   - Authorized JavaScript origins:
+     - `https://sappeun.vercel.app`
+     - `http://localhost:3000`
+   - Authorized redirect URI:
+     - `https://wtptvgxyqkqqsfkdsoox.supabase.co/auth/v1/callback`
+4. Supabase Dashboard → Authentication → Sign In / Providers → Google
+5. Client ID와 Client Secret은 Supabase Dashboard에만 저장한다.
+6. Google provider의 `Skip nonce checks`와 `Allow users without an email`은 기본값 OFF로 둔다.
 
 ### Cloudflare R2
 1. https://dash.cloudflare.com → R2
