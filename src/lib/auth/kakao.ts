@@ -7,6 +7,7 @@ export const KAKAO_AUTH_NONCE_COOKIE_NAME = 'sappeun-kakao-auth-nonce'
 const KAKAO_AUTHORIZE_URL = 'https://kauth.kakao.com/oauth/authorize'
 const KAKAO_TOKEN_URL = 'https://kauth.kakao.com/oauth/token'
 const KAKAO_OIDC_SCOPE = 'openid profile_nickname profile_image'
+const KAKAO_PUBLIC_CLIENT_ID = '4cb6fbeca11ab4c039a23530d21e75a6'
 
 export interface KakaoTokenResponse {
   access_token?: string
@@ -16,7 +17,12 @@ export interface KakaoTokenResponse {
 }
 
 export function getKakaoClientId() {
-  return process.env.KAKAO_CLIENT_ID?.trim() || null
+  const configuredClientId = process.env.KAKAO_CLIENT_ID?.trim()
+  if (configuredClientId && !configuredClientId.startsWith('http')) {
+    return configuredClientId
+  }
+
+  return KAKAO_PUBLIC_CLIENT_ID
 }
 
 function getKakaoClientSecret() {
