@@ -126,6 +126,7 @@ export function ClipRecorderModal({
 
   const canRecord = Boolean(stream && videoReady && !isRecording && !isPreparing)
   const busy = isRecording || isPreparing
+  const waitingForCamera = !stream || !videoReady
 
   return (
     <div
@@ -227,13 +228,13 @@ export function ClipRecorderModal({
           )}
         </section>
 
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <p className="px-8 pb-4 pt-5 text-center text-[13px] leading-normal text-camera-muted">
             {message ?? cell.hint ?? '움직임이 보이도록 3초 동안 짧게 담아주세요'}
           </p>
 
           {previewUrl && capture ? (
-            <div className="mt-auto flex flex-col gap-3 px-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-8 pb-[max(2rem,env(safe-area-inset-bottom))] pt-1 scroll-pb-8">
               <label
                 htmlFor="clip-description"
                 className="flex flex-col gap-2 text-[13px] font-semibold text-camera-foreground"
@@ -298,16 +299,27 @@ export function ClipRecorderModal({
                 onClick={handleRecord}
                 disabled={!canRecord}
                 aria-label="3초 클립 촬영"
+                aria-busy={busy}
                 className={cn(
-                  'flex h-20 w-20 items-center justify-center rounded-pill border-4 border-camera-foreground transition-opacity',
-                  !canRecord && 'opacity-50',
+                  'flex h-20 w-20 items-center justify-center rounded-full border-4 transition-colors transition-opacity',
+                  busy
+                    ? 'border-danger'
+                    : 'border-camera-foreground',
+                  waitingForCamera && 'opacity-50',
                 )}
               >
-                <span className="flex h-[60px] w-[60px] items-center justify-center rounded-pill bg-camera-foreground text-camera-button-text">
+                <span
+                  className={cn(
+                    'flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-full transition-colors',
+                    busy
+                      ? 'bg-danger text-paper'
+                      : 'bg-camera-foreground text-camera-button-text',
+                  )}
+                >
                   {busy ? (
                     <Loader2 size={24} className="animate-spin" aria-hidden />
                   ) : (
-                    <span className="h-7 w-7 rounded-pill bg-danger shadow-[0_0_0_6px_rgba(229,72,77,0.18)]" />
+                    <span className="block h-7 w-7 rounded-full bg-danger shadow-[0_0_0_6px_rgba(229,72,77,0.18)]" />
                   )}
                 </span>
               </button>

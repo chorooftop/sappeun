@@ -1,6 +1,6 @@
 'use client'
 
-import { Flag, Shuffle, X } from 'lucide-react'
+import { Check, Edit3, Flag, Shuffle, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ClipRecorderModal,
@@ -16,7 +16,11 @@ import {
   composeBoardFromCellIds,
   pickReplacementCell,
 } from '@/lib/bingo/compose'
-import { createCustomMissionSnapshot } from '@/lib/bingo/customBoard'
+import {
+  createCustomMissionSnapshot,
+  CUSTOM_BOARD_DESCRIPTION_MAX,
+  CUSTOM_BOARD_TITLE_MAX,
+} from '@/lib/bingo/customBoard'
 import { createMissionSnapshot } from '@/lib/bingo/missionSnapshot'
 import {
   clearActiveBoardSession,
@@ -91,6 +95,126 @@ interface ClipEntry {
   uploadError?: string
 }
 
+interface BoardMetadataDialogProps {
+  title: string
+  description?: string
+  onClose: () => void
+  onSave: (input: { title: string; description: string }) => Promise<void>
+}
+
+function BoardMetadataDialog({
+  title,
+  description,
+  onClose,
+  onSave,
+}: BoardMetadataDialogProps) {
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const [draftTitle, setDraftTitle] = useState(title === '커스텀 빙고' ? '' : title)
+  const [draftDescription, setDraftDescription] = useState(description ?? '')
+  const [savePending, setSavePending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    closeRef.current?.focus()
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  async function handleSave() {
+    setSavePending(true)
+    setError(null)
+    try {
+      await onSave({
+        title: draftTitle,
+        description: draftDescription,
+      })
+      onClose()
+    } catch (saveError) {
+      console.warn('Unable to save board metadata', saveError)
+      setError('빙고판 정보를 저장하지 못했어요. 다시 시도해주세요.')
+    } finally {
+      setSavePending(false)
+    }
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="빙고판 정보 편집"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-overlay-scrim px-0 sm:items-center sm:p-6"
+    >
+      <div className="w-full max-w-[430px] rounded-t-lg bg-paper text-ink-900 shadow-card sm:rounded-lg">
+        <header className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold">빙고판 정보</p>
+            <p className="text-[12px] text-ink-500">
+              커스텀 빙고의 제목과 설명을 수정해요.
+            </p>
+          </div>
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            aria-label="빙고판 정보 편집 닫기"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill text-ink-900 hover:bg-ink-100"
+          >
+            <X size={20} aria-hidden />
+          </button>
+        </header>
+
+        <div className="flex flex-col gap-3 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1">
+          <label className="flex flex-col gap-2 text-caption font-semibold text-ink-700">
+            빙고판 이름
+            <input
+              value={draftTitle}
+              maxLength={CUSTOM_BOARD_TITLE_MAX}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              placeholder="비우면 커스텀 빙고로 표시돼요"
+              className="min-h-11 rounded-sm border-[1.5px] border-ink-300 bg-paper px-3 text-body-2 font-medium text-ink-900 outline-none focus:border-2 focus:border-brand-primary"
+            />
+            <span className="text-right text-caption font-medium text-ink-500">
+              {draftTitle.length}/{CUSTOM_BOARD_TITLE_MAX}
+            </span>
+          </label>
+
+          <label className="flex flex-col gap-2 text-caption font-semibold text-ink-700">
+            빙고판 설명
+            <textarea
+              value={draftDescription}
+              maxLength={CUSTOM_BOARD_DESCRIPTION_MAX}
+              rows={3}
+              onChange={(event) => setDraftDescription(event.target.value)}
+              placeholder="오늘 빙고의 분위기나 목표를 적어주세요"
+              className="min-h-20 resize-none rounded-sm border-[1.5px] border-ink-300 bg-paper px-3 py-2 text-body-2 font-medium leading-normal text-ink-900 outline-none focus:border-2 focus:border-brand-primary"
+            />
+            <span className="text-right text-caption font-medium text-ink-500">
+              {draftDescription.length}/{CUSTOM_BOARD_DESCRIPTION_MAX}
+            </span>
+          </label>
+
+          {error && <p className="text-caption font-medium text-danger">{error}</p>}
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={savePending}
+            className="mt-1 flex min-h-12 items-center justify-center gap-2 rounded-pill bg-ink-900 px-5 font-semibold text-paper"
+          >
+            <Check size={18} aria-hidden />
+            {savePending ? '저장 중' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function collectBingoLinePositions(
   lines: ReturnType<typeof checkBingoLines>,
   side: number,
@@ -154,6 +278,17 @@ function sessionBoardKind(session: PersistedBoardSession | null): BoardKind {
   return session?.version === 4 ? session.boardKind : 'mission'
 }
 
+function hasCustomCells(cells: readonly CellMaster[]): boolean {
+  return cells.some((cell) => cell.id.startsWith('custom:'))
+}
+
+function resolveBoardKind(
+  boardKind: BoardKind,
+  cells: readonly CellMaster[],
+): BoardKind {
+  return boardKind === 'custom' || hasCustomCells(cells) ? 'custom' : 'mission'
+}
+
 export function BingoBoard({
   authSummary,
   mode,
@@ -193,6 +328,7 @@ export function BingoBoard({
   const [exitPending, setExitPending] = useState(false)
   const [exitError, setExitError] = useState<string | null>(null)
   const [finishPending, setFinishPending] = useState(false)
+  const [boardEditorOpen, setBoardEditorOpen] = useState(false)
 
   const urlsRef = useRef<Set<string>>(new Set())
   const sessionRef = useRef<PersistedBoardSession | null>(null)
@@ -450,7 +586,10 @@ export function BingoBoard({
           updateBoardCells(restored.cells)
           updateBoardFreePosition(restored.freePosition)
           updateBoardMeta({
-            boardKind: sessionBoardKind(activeSession),
+            boardKind: resolveBoardKind(
+              sessionBoardKind(activeSession),
+              restored.cells,
+            ),
             title: activeSession.version === 4
               ? activeSession.title
               : activeSession.nickname,
@@ -643,10 +782,11 @@ export function BingoBoard({
   }, [])
 
   const fillPct = (marked.size / size) * 100
-  const headerSubtitle = boardMeta.boardKind === 'custom'
+  const isCustomBoard = resolveBoardKind(boardMeta.boardKind, boardCells) === 'custom'
+  const headerSubtitle = isCustomBoard
     ? boardMeta.description || '커스텀 빙고'
     : `오늘 산책 · ${todayLabel}`
-  const canReplaceMissions = boardMeta.boardKind === 'mission'
+  const canReplaceMissions = !isCustomBoard
 
   function goHomeWithFreshAuth() {
     window.location.assign('/')
@@ -1218,6 +1358,51 @@ export function BingoBoard({
     }
   }
 
+  async function syncGuestBoardMetadataSnapshot(
+    latestSession: PersistedBoardSessionV4,
+  ) {
+    const guestClip = Array.from(clipsRef.current.values()).find(
+      (clip) => (
+        clip.uploadStatus === 'uploaded' &&
+        clip.ownerKind === 'guest' &&
+        Boolean(clip.clipId)
+      ),
+    )
+    if (!guestClip?.clipId) return
+
+    await updateStoredClipDescription(
+      guestClip.clipId,
+      'guest',
+      guestClip.description,
+      latestSession,
+    )
+  }
+
+  async function handleSaveBoardMetadata(input: {
+    title: string
+    description: string
+  }) {
+    if (resolveBoardKind(boardMetaRef.current.boardKind, boardCellsRef.current) !== 'custom') return
+
+    const nextMeta = {
+      ...boardMetaRef.current,
+      boardKind: 'custom' as const,
+      title: input.title.trim() || '커스텀 빙고',
+      description: input.description.trim() || undefined,
+    }
+    updateBoardMeta(nextMeta)
+
+    const latestSession = saveCurrentSessionSnapshot()
+    if (!latestSession) return
+
+    if (authSummary.isAuthenticated) {
+      await syncBoardSession(latestSession, { force: true })
+      return
+    }
+
+    await syncGuestBoardMetadataSnapshot(latestSession)
+  }
+
   function handleReplaceCell(position: number) {
     const target = boardCells[position]
     const replacement = pickReplacementCell(boardCells, target)
@@ -1345,14 +1530,25 @@ export function BingoBoard({
         >
           <X size={22} aria-hidden />
         </button>
-        <div className="flex flex-1 flex-col items-center text-center">
-          <span className="text-[15px] font-semibold text-ink-900">
-            {boardMeta.title}
-          </span>
-          <span className="text-[11px] text-ink-500">
-            {headerSubtitle}
-          </span>
-        </div>
+        {isCustomBoard ? (
+          <div className="flex min-w-0 flex-1 flex-col items-center text-center">
+            <span className="max-w-full truncate text-[15px] font-semibold text-ink-900">
+              {boardMeta.title}
+            </span>
+            <span className="max-w-full truncate text-[11px] text-ink-500">
+              {headerSubtitle}
+            </span>
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col items-center text-center">
+            <span className="text-[15px] font-semibold text-ink-900">
+              {boardMeta.title}
+            </span>
+            <span className="text-[11px] text-ink-500">
+              {headerSubtitle}
+            </span>
+          </div>
+        )}
         <ThemeToggle compact />
       </header>
 
@@ -1374,6 +1570,17 @@ export function BingoBoard({
             style={{ width: `${fillPct}%` }}
           />
         </div>
+        {isCustomBoard && (
+          <button
+            type="button"
+            onClick={() => setBoardEditorOpen(true)}
+            className="mt-2 flex min-h-10 items-center justify-center gap-1.5 rounded-pill border border-brand-primary/30 bg-brand-primary-soft px-4 text-[13px] font-semibold text-brand-primary transition-colors hover:bg-brand-primary hover:text-paper"
+            aria-label="빙고판 정보 수정"
+          >
+            <Edit3 size={15} aria-hidden />
+            빙고판 정보 수정
+          </button>
+        )}
       </section>
 
       <div
@@ -1442,6 +1649,15 @@ export function BingoBoard({
       </footer>
 
       {exitDialog}
+
+      {boardEditorOpen && isCustomBoard && (
+        <BoardMetadataDialog
+          title={boardMeta.title}
+          description={boardMeta.description}
+          onClose={() => setBoardEditorOpen(false)}
+          onSave={handleSaveBoardMetadata}
+        />
+      )}
 
       {cameraFor !== null && activeCell && (
         <ClipRecorderModal
